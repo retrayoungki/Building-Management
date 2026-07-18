@@ -1,0 +1,294 @@
+import React, { createContext, useContext, useState } from 'react';
+
+const LanguageContext = createContext();
+
+const translations = {
+  id: {
+    // Nav & General
+    dashboard: "Dashboard",
+    tenants: "Tenant & Kontrak",
+    maintenance: "Work Order / Maintenance",
+    certifications: "Sertifikasi & Perizinan",
+    security: "Security & Cleaning",
+    reports: "Laporan",
+    settings: "Pengaturan",
+    logout: "Keluar",
+    search_placeholder: "Cari data, unit, atau laporan...",
+    search_tenant_placeholder: "Cari tenant, unit, atau kontrak...",
+    property_manager: "Manajer Properti",
+    building_manager: "Manajer Gedung",
+    
+    // Dashboard Overview
+    occupancy_rate: "Occupancy Rate",
+    collection_rate: "Collection Rate",
+    open_orders: "Open Work Orders",
+    expired_soon: "Expired Soon",
+    units_leased: "Unit Tersewa",
+    current_bill: "Tagihan Bulan Berjalan",
+    high_priority: "Dalam Status High Priority",
+    slf_water: "SLF & Izin Penggunaan Air",
+    collection_trend: "Tren Collection Rate (6 Bulan)",
+    monthly: "Bulanan",
+    quarterly: "Kuartal",
+    maintenance_status: "Status Maintenance",
+    total_wo: "Total WO",
+    done: "Selesai",
+    running: "Berjalan",
+    late: "Terlambat",
+    recent_activity: "Aktivitas Terkini",
+    see_all: "Lihat Semua",
+    category: "Kategori",
+    description: "Deskripsi",
+    unit_party: "Unit / Pihak",
+    status: "Status",
+    time: "Waktu",
+    pm_schedule: "Jadwal PM",
+    sunday: "Minggu",
+    genset_test: "Genset Load Test",
+    mep_area: "Area MEP",
+    fogging_parking: "Fogging Area Parkir",
+    basement: "Basement 1-3",
+    electric_panel: "Cek Panel Listrik LT 5",
+    slf_renewal_title: "Pembaruan SLF",
+    slf_renewal_desc: "Sertifikat Laik Fungsi (SLF) akan berakhir dalam 24 hari. Segera siapkan dokumen teknis.",
+    start_renewal: "Mulai Proses Pembaruan",
+
+    // Tenant & Contracts
+    management: "Manajemen",
+    tenant_list_title: "Daftar Tenant & Unit",
+    add_tenant_btn: "Tambah Tenant Baru",
+    total_tenant: "Total Tenant",
+    active_contracts: "Kontrak Aktif",
+    ending_soon: "Akan Berakhir",
+    late_payment: "Terlambat Bayar",
+    inventory_title: "Inventory Tenant",
+    updated_time: "Updated 2h ago",
+    filter: "Filter",
+    export: "Export",
+    unit_col: "UNIT",
+    tenant_name_col: "TENANT NAME",
+    contract_status_col: "CONTRACT STATUS",
+    rent_due_col: "RENT DUE DATE",
+    payment_status_col: "PAYMENT STATUS",
+    action_col: "ACTION",
+    showing_txt: "Showing",
+    to_txt: "to",
+    of_txt: "of",
+    tenants_txt: "tenants",
+    no_data: "Tidak ada data penyewa yang cocok.",
+    batal: "Batal",
+    simpan: "Simpan Data Tenant",
+    
+    // Modal Tambah Tenant
+    modal_title: "Tambah Tenant Baru",
+    modal_subtitle: "Silahkan isi detail informasi penyewa dan unit.",
+    comp_name_lbl: "NAMA TENANT / PERUSAHAAN",
+    unit_floor_lbl: "UNIT & LANTAI",
+    start_contract_lbl: "MULAI KONTRAK",
+    end_contract_lbl: "AKHIR KONTRAK",
+    annual_rent_lbl: "NILAI SEWA PER TAHUN (IDR)",
+    upload_doc_lbl: "UPLOAD DOKUMEN KONTRAK (PDF/IMG)",
+    drag_drop_txt: "Drag & drop berkas atau",
+    browse_txt: "Cari File",
+    max_size_txt: "Maksimal 10MB per file",
+    
+    // Tenant Detail
+    active_tenant_badge: "Active Tenant",
+    contact_person: "Contact Person",
+    contact_email: "Contact Email",
+    edit_profile: "Edit Profil",
+    send_msg: "Kirim Pesan",
+    contract_summary: "Ringkasan Kontrak",
+    contract_id: "ID Kontrak",
+    area_size: "Luas Area",
+    contract_duration: "Durasi Kontrak",
+    start_lbl: "Mulai",
+    end_lbl: "Berakhir",
+    important_notes: "Catatan Penting:",
+    renewal_notes: "Rencana renewal dibicarakan 6 bulan sebelum masa berlaku berakhir (Juli 2026).",
+    payment_history: "Riwayat Pembayaran",
+    period_col: "Bulan / Periode",
+    invoice_col: "Invoice ID",
+    amount_col: "Jumlah (IDR)",
+    terbayar: "TERBAYAR",
+    proses: "PROSES",
+    legal_docs: "Dokumen Legal",
+    psm_doc: "Dokumen PSM",
+    bast_doc: "BAST Ruangan",
+    fitout_doc: "Izin Fit-out",
+    upload_new_doc: "Unggah Dokumen Baru",
+    complaint_history: "Riwayat Keluhan & Perbaikan",
+    create_ticket: "Buat Tiket Baru",
+    in_progress: "IN PROGRESS",
+    completed: "COMPLETED",
+    reported_by: "Dilaporkan oleh",
+    load_more: "Muat Riwayat Lebih Banyak",
+    
+    // Ticket Modal
+    ticket_modal_title: "Buat Tiket Keluhan Baru",
+    subject_lbl: "SUBJEK KELUHAN",
+    desc_lbl: "DESKRIPSI LENGKAP",
+    send_ticket: "Kirim Tiket",
+    upload_modal_title: "Unggah Dokumen Baru",
+    doc_name_lbl: "NAMA / JENIS DOKUMEN",
+    select_file_lbl: "PILIH FILE",
+    save_file: "Simpan File"
+  },
+  en: {
+    // Nav & General
+    dashboard: "Dashboard",
+    tenants: "Tenant & Leases",
+    maintenance: "Work Order / Maintenance",
+    certifications: "Compliance & Licensing",
+    security: "Security & Cleaning",
+    reports: "Reports",
+    settings: "Settings",
+    logout: "Logout",
+    search_placeholder: "Search data, units, or reports...",
+    search_tenant_placeholder: "Search tenants, units, or leases...",
+    property_manager: "Property Manager",
+    building_manager: "Building Manager",
+
+    // Dashboard Overview
+    occupancy_rate: "Occupancy Rate",
+    collection_rate: "Collection Rate",
+    open_orders: "Open Work Orders",
+    expired_soon: "Expired Soon",
+    units_leased: "Units Leased",
+    current_bill: "Current Month Invoices",
+    high_priority: "In High Priority Status",
+    slf_water: "SLF & Water Utility Permit",
+    collection_trend: "Collection Rate Trend (6 Months)",
+    monthly: "Monthly",
+    quarterly: "Quarterly",
+    maintenance_status: "Maintenance Status",
+    total_wo: "Total WO",
+    done: "Resolved",
+    running: "Ongoing",
+    late: "Overdue",
+    recent_activity: "Recent Activity",
+    see_all: "View All",
+    category: "Category",
+    description: "Description",
+    unit_party: "Unit / Entity",
+    status: "Status",
+    time: "Time",
+    pm_schedule: "PM Schedule",
+    sunday: "Sunday",
+    genset_test: "Genset Load Test",
+    mep_area: "MEP Area",
+    fogging_parking: "Parking Area Fogging",
+    basement: "Basement 1-3",
+    electric_panel: "FL 5 Electrical Panel Check",
+    slf_renewal_title: "SLF Renewal",
+    slf_renewal_desc: "Sertifikat Laik Fungsi (SLF) will expire in 24 days. Prepare technical files immediately.",
+    start_renewal: "Start Renewal Process",
+
+    // Tenant & Contracts
+    management: "Management",
+    tenant_list_title: "Tenant & Unit Directory",
+    add_tenant_btn: "Add New Tenant",
+    total_tenant: "Total Tenants",
+    active_contracts: "Active Contracts",
+    ending_soon: "Expiring Soon",
+    late_payment: "Late Payments",
+    inventory_title: "Tenant Inventory",
+    updated_time: "Updated 2h ago",
+    filter: "Filter",
+    export: "Export",
+    unit_col: "UNIT",
+    tenant_name_col: "TENANT NAME",
+    contract_status_col: "CONTRACT STATUS",
+    rent_due_col: "RENT DUE DATE",
+    payment_status_col: "PAYMENT STATUS",
+    action_col: "ACTION",
+    showing_txt: "Showing",
+    to_txt: "to",
+    of_txt: "of",
+    tenants_txt: "tenants",
+    no_data: "No matching tenant data found.",
+    batal: "Cancel",
+    simpan: "Save Tenant Data",
+
+    // Modal Tambah Tenant
+    modal_title: "Add New Tenant",
+    modal_subtitle: "Please enter lease and unit details.",
+    comp_name_lbl: "TENANT NAME / COMPANY",
+    unit_floor_lbl: "UNIT & FLOOR",
+    start_contract_lbl: "LEASE START DATE",
+    end_contract_lbl: "LEASE END DATE",
+    annual_rent_lbl: "ANNUAL RENT RATE (IDR)",
+    upload_doc_lbl: "UPLOAD LEASE DOCUMENTS (PDF/IMG)",
+    drag_drop_txt: "Drag & drop files or",
+    browse_txt: "Browse File",
+    max_size_txt: "Max 10MB per file",
+
+    // Tenant Detail
+    active_tenant_badge: "Active Tenant",
+    contact_person: "Contact Person",
+    contact_email: "Contact Email",
+    edit_profile: "Edit Profile",
+    send_msg: "Send Message",
+    contract_summary: "Lease Summary",
+    contract_id: "Contract ID",
+    area_size: "Lease Area",
+    contract_duration: "Lease Duration",
+    start_lbl: "Start",
+    end_lbl: "End",
+    important_notes: "Important Notes:",
+    renewal_notes: "Renewal discussions should begin 6 months prior to expiry (July 2026).",
+    payment_history: "Payment History",
+    period_col: "Month / Period",
+    invoice_col: "Invoice ID",
+    amount_col: "Amount (IDR)",
+    terbayar: "PAID",
+    proses: "PROCESSING",
+    legal_docs: "Legal Documents",
+    psm_doc: "PSM Document",
+    bast_doc: "Room Handover (BAST)",
+    fitout_doc: "Fit-out Permit",
+    upload_new_doc: "Upload New Document",
+    complaint_history: "Complaint & Maintenance Log",
+    create_ticket: "Open New Ticket",
+    in_progress: "IN PROGRESS",
+    completed: "COMPLETED",
+    reported_by: "Reported by",
+    load_more: "Load More History",
+
+    // Ticket Modal
+    ticket_modal_title: "Open New Complaint Ticket",
+    subject_lbl: "COMPLAINT SUBJECT",
+    desc_lbl: "FULL DESCRIPTION",
+    send_ticket: "Send Ticket",
+    upload_modal_title: "Upload New Document",
+    doc_name_lbl: "DOCUMENT NAME / TYPE",
+    select_file_lbl: "SELECT FILE",
+    save_file: "Save File"
+  }
+};
+
+export function LanguageProvider({ children }) {
+  const [lang, setLang] = useState('id');
+
+  const toggleLanguage = () => {
+    setLang((prev) => (prev === 'id' ? 'en' : 'id'));
+  };
+
+  const t = (key) => {
+    return translations[lang][key] || key;
+  };
+
+  return (
+    <LanguageContext.Provider value={{ lang, toggleLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+export function useLanguage() {
+  const context = useContext(LanguageContext);
+  if (!context) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
+}
