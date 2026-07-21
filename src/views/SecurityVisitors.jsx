@@ -278,7 +278,7 @@ export default function SecurityVisitors({ visitors, onCheckInVisitor, onCheckOu
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-outline-variant overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-4 bg-primary text-white flex justify-between items-center">
-              <span className="font-bold text-sm">GedungKu Guest Pass</span>
+              <span className="font-bold text-sm">Graha Kaji Guest Pass</span>
               <button 
                 onClick={() => setShowQRModal(false)}
                 className="text-white hover:bg-white/10 w-8 h-8 rounded-full flex items-center justify-center text-lg font-bold"

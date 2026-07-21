@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
-export default function Header({ notifications, onMarkAllRead, searchTerm, onSearchChange }) {
+export default function Header({ notifications, onMarkAllRead, searchTerm, onSearchChange, currentUser }) {
   const { lang, toggleLanguage, t } = useLanguage();
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -54,14 +54,16 @@ export default function Header({ notifications, onMarkAllRead, searchTerm, onSea
         {/* Profile */}
         <div className="flex items-center gap-3 text-left">
           <div className="text-right hidden sm:block">
-            <p className="font-label-md text-label-md text-on-surface font-bold leading-none">Budi Santoso</p>
-            <p className="font-label-md text-label-md text-on-surface-variant leading-none mt-1 text-[10px] font-semibold">{t('property_manager')}</p>
+            <p className="font-label-md text-label-md text-on-surface font-bold leading-none">
+              {currentUser ? currentUser.name : 'Budi Santoso'}
+            </p>
+            <p className="font-label-md text-label-md text-on-surface-variant leading-none mt-1 text-[10px] font-semibold">
+              {currentUser ? t(currentUser.role) : t('property_manager')}
+            </p>
           </div>
-          <img
-            className="w-10 h-10 rounded-full border border-outline-variant object-cover"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvlvpygaiPMS2uEFXDnuBOyhEY9drUfhv1D8pEZK7TR9g5V0YrOpwin0zdTjty6WHCgSitN2GTzmhaMFWwrNEPBBjQP1HFRWqdIDBvmjOsmCgKCpf8Lrftwryt8CTPLd0A8eIDg7Xvnr9Xx3i9BOWqf1dNCFYTg35DFhpY8w3nWpcy9M3gpfsxE-TIX_BemEInwwKxUoLJ-xGTRsOfUYUQQj-VODWWLhqT-jrz12Yx_kjcto7p_tE"
-            alt="Budi Santoso headshot"
-          />
+          <div className="w-10 h-10 rounded-full bg-primary-container/10 border border-outline-variant flex items-center justify-center text-primary font-black text-xs shrink-0 select-none">
+            {currentUser ? currentUser.initials : 'BS'}
+          </div>
         </div>
       </div>
     </header>

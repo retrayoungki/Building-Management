@@ -3,19 +3,28 @@ import { Mail, Phone, MapPin, Calendar, Trash2, Plus, Filter, Download, ChevronL
 import TenantDetail from './TenantDetail';
 import { useLanguage } from '../context/LanguageContext';
 
-export default function TenantManagement({ tenants, onAddTenant, onDeleteTenant, searchTerm }) {
+export default function TenantManagement({ tenants, onAddTenant, onDeleteTenant, searchTerm, spaces }) {
   const { t } = useLanguage();
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState(null);
 
+  const availableSpaces = spaces ? spaces.filter(s => s.status === 'Available') : [];
+
   // Form State
   const [newCompany, setNewCompany] = useState('');
-  const [newUnit, setNewUnit] = useState('Fl. 12 - Unit A1');
+  const [newUnit, setNewUnit] = useState('');
   const [newLeaseStart, setNewLeaseStart] = useState('');
   const [newLeaseEnd, setNewLeaseEnd] = useState('');
   const [newRent, setNewRent] = useState('');
 
-  const unitOptions = ['Fl. 12 - Unit A1', 'Fl. 08 - Unit C4', 'Fl. 15 - Unit B2', 'Fl. 20 - Suite X', 'Fl. 02 - Unit 05'];
+  const handleOpenAddModal = () => {
+    if (availableSpaces.length > 0) {
+      setNewUnit(availableSpaces[0].unit);
+    } else {
+      setNewUnit('');
+    }
+    setShowAddModal(true);
+  };
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
@@ -42,7 +51,7 @@ export default function TenantManagement({ tenants, onAddTenant, onDeleteTenant,
     onAddTenant(newTenant);
 
     setNewCompany('');
-    setNewUnit('Fl. 12 - Unit A1');
+    setNewUnit('');
     setNewLeaseStart('');
     setNewLeaseEnd('');
     setNewRent('');
@@ -83,7 +92,7 @@ export default function TenantManagement({ tenants, onAddTenant, onDeleteTenant,
         </div>
         
         <button 
-          onClick={() => setShowAddModal(true)}
+          onClick={handleOpenAddModal}
           className="bg-primary text-on-primary px-6 py-3 rounded-xl font-body-md flex items-center gap-2 hover:bg-primary-container hover:shadow-lg transition-all shadow-md active:scale-95 text-white font-bold text-xs shrink-0"
         >
           <span className="material-symbols-outlined text-[18px]">
@@ -339,9 +348,12 @@ export default function TenantManagement({ tenants, onAddTenant, onDeleteTenant,
                     onChange={(e) => setNewUnit(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-outline-variant focus:ring-2 focus:ring-primary focus:outline-none transition-all font-medium text-on-surface bg-surface-container-low"
                   >
-                    {unitOptions.map((opt, i) => (
-                      <option key={i} value={opt}>{opt}</option>
+                    {availableSpaces.map((opt, i) => (
+                      <option key={i} value={opt.unit}>{opt.unit} ({opt.area} m²)</option>
                     ))}
+                    {availableSpaces.length === 0 && (
+                      <option value="">Tidak ada space tersedia</option>
+                    )}
                   </select>
                 </div>
 

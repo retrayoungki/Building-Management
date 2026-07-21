@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
-export default function Login({ onLoginSuccess }) {
+export default function Login({ users = [], onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
   
   // Submit button state: 'idle', 'loading', 'success'
   const [status, setStatus] = useState('idle');
@@ -33,16 +34,25 @@ export default function Login({ onLoginSuccess }) {
     e.preventDefault();
     if (status !== 'idle') return;
 
+    setError('');
     setStatus('loading');
     
-    // Simulate authentication
+    // Find matching user in props
+    const matchedUser = users.find(
+      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+    );
+
     setTimeout(() => {
-      setStatus('success');
-      
-      setTimeout(() => {
-        onLoginSuccess();
-      }, 1000);
-    }, 1500);
+      if (matchedUser) {
+        setStatus('success');
+        setTimeout(() => {
+          onLoginSuccess(matchedUser);
+        }, 800);
+      } else {
+        setStatus('idle');
+        setError('Email atau password salah! Silakan coba lagi.');
+      }
+    }, 1200);
   };
 
   return (
@@ -51,13 +61,13 @@ export default function Login({ onLoginSuccess }) {
       <section className="w-full lg:w-[450px] xl:w-[500px] flex flex-col justify-between p-12 bg-white z-10 shadow-2xl shrink-0">
         {/* Header Brand */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center">
-            <span className="material-symbols-outlined text-white text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-              domain
-            </span>
-          </div>
+          <img 
+            src="/logo-graha-kaji.png" 
+            alt="Graha Kaji Logo" 
+            className="w-20 h-20 object-contain"
+          />
           <div>
-            <h1 className="font-headline-md text-headline-md font-bold text-primary leading-tight">GedungKu</h1>
+            <h1 className="font-headline-md text-headline-md font-bold text-primary leading-tight">Graha Kaji</h1>
             <p className="font-label-md text-label-md text-on-surface-variant">Building Management System</p>
           </div>
         </div>
@@ -68,6 +78,13 @@ export default function Login({ onLoginSuccess }) {
           <p className="font-body-md text-body-md text-on-surface-variant mb-8">
             Please enter your credentials to access the facility dashboard.
           </p>
+
+          {error && (
+            <div className="bg-red-50 text-red-700 border border-red-200 text-xs font-semibold p-3.5 rounded-lg mb-6 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+              <span className="material-symbols-outlined text-[16px] text-red-600 shrink-0">error</span>
+              <span>{error}</span>
+            </div>
+          )}
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-1.5">
@@ -167,6 +184,24 @@ export default function Login({ onLoginSuccess }) {
             </button>
           </form>
 
+          {/* Demo Credentials Hint */}
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-xl text-xs">
+            <p className="font-bold text-blue-700 mb-2 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[14px]">info</span>
+              Demo Login Credentials
+            </p>
+            <div className="space-y-1 text-blue-600 font-mono">
+              <div className="flex justify-between gap-4">
+                <span className="text-blue-400">Admin</span>
+                <span>admin@gedungku.com / admin123</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-blue-400">Manager</span>
+                <span>budi.santoso@gedungku.id / password123</span>
+              </div>
+            </div>
+          </div>
+
           {/* SSO Alternative */}
           <div className="mt-8">
             <div className="relative flex items-center py-4">
@@ -209,7 +244,7 @@ export default function Login({ onLoginSuccess }) {
         {/* Footer */}
         <footer className="text-center">
           <p className="font-label-md text-label-md text-outline">
-            © 2024 GedungKu by Professional Systems. All rights reserved.
+            © 2024 Graha Kaji Building Management. All rights reserved.
           </p>
         </footer>
       </section>

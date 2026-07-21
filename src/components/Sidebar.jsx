@@ -10,6 +10,7 @@ export default function Sidebar({ activeView, onViewChange, onLogout }) {
     { id: 'maintenance', name: t('maintenance'), icon: 'engineering' },
     { id: 'certifications', name: t('certifications'), icon: 'verified_user' },
     { id: 'security', name: t('security'), icon: 'security' },
+    { id: 'expenses', name: t('expenses'), icon: 'payments' },
     { id: 'reports', name: t('reports'), icon: 'assessment' },
     { id: 'settings', name: t('settings'), icon: 'settings' }
   ];
@@ -18,13 +19,13 @@ export default function Sidebar({ activeView, onViewChange, onLogout }) {
     <aside className="w-sidebar-width h-screen sticky left-0 top-0 border-r border-outline-variant bg-surface flex flex-col py-6 shrink-0 z-20 transition-all duration-200">
       {/* Brand Header with Building Box Icon */}
       <div className="px-6 mb-8 flex items-center gap-3 text-left">
-        <div className="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-on-primary-container">
-          <span className="material-symbols-outlined text-white text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-            domain
-          </span>
-        </div>
+        <img 
+          src="/logo-graha-kaji.png" 
+          alt="Graha Kaji Logo" 
+          className="w-20 h-20 object-contain shrink-0"
+        />
         <div>
-          <h1 className="font-headline-md text-headline-md font-bold text-primary text-base leading-tight">GedungKu</h1>
+          <h1 className="font-headline-md text-headline-md font-bold text-primary text-base leading-tight">Graha Kaji</h1>
           <p className="text-label-md font-label-md text-on-surface-variant text-[10px]">Building Management</p>
         </div>
       </div>
