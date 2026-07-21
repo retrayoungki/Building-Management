@@ -12,37 +12,46 @@ export default function TenantManagement({ tenants, onAddTenant, onDeleteTenant,
 
   // Form State
   const [newCompany, setNewCompany] = useState('');
-  const [newUnit, setNewUnit] = useState('');
+  const [selectedUnits, setSelectedUnits] = useState([]); // array of unit names
   const [newLeaseStart, setNewLeaseStart] = useState('');
   const [newLeaseEnd, setNewLeaseEnd] = useState('');
   const [newRent, setNewRent] = useState('');
 
   const handleOpenAddModal = () => {
-    if (availableSpaces.length > 0) {
-      setNewUnit(availableSpaces[0].unit);
-    } else {
-      setNewUnit('');
-    }
+    setSelectedUnits([]);
     setShowAddModal(true);
   };
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
-    if (!newCompany || !newUnit || !newLeaseStart || !newLeaseEnd) return;
+    if (!newCompany || selectedUnits.length === 0 || !newLeaseStart || !newLeaseEnd) {
+      alert('Mohon isi nama perusahaan, pilih minimal 1 unit, dan tentukan masa sewa!');
+      return;
+    }
 
     const words = newCompany.split(' ');
     const initials = words.length > 1 
       ? (words[0].charAt(0) + words[1].charAt(0)).toUpperCase()
       : newCompany.slice(0, 2).toUpperCase();
 
+    const jointUnits = selectedUnits.join(', ');
+    
+    // Hitung total sewa untuk unit-unit terpilih
+    const totalSelectedRent = selectedUnits.reduce((sum, unitName) => {
+      const sp = spaces.find(s => s.unit === unitName);
+      return sum + (sp ? sp.rent : 0);
+    }, 0);
+
+    const calculatedRent = parseInt(newRent) || totalSelectedRent || 150000000;
+
     const newTenant = {
       id: 'TNT-' + Math.floor(1000 + Math.random() * 9000),
       company: newCompany,
-      unit: newUnit,
+      unit: jointUnits,
       leaseStart: newLeaseStart,
       leaseEnd: newLeaseEnd,
       dueDate: new Date(newLeaseEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      rent: parseInt(newRent) || 150000000,
+      rent: calculatedRent,
       status: 'Active',
       payment: 'Paid',
       initials: initials
@@ -51,7 +60,7 @@ export default function TenantManagement({ tenants, onAddTenant, onDeleteTenant,
     onAddTenant(newTenant);
 
     setNewCompany('');
-    setNewUnit('');
+    setSelectedUnits([]);
     setNewLeaseStart('');
     setNewLeaseEnd('');
     setNewRent('');
@@ -340,22 +349,38 @@ export default function TenantManagement({ tenants, onAddTenant, onDeleteTenant,
                   />
                 </div>
 
-                {/* Unit Option */}
-                <div className="space-y-2 col-span-2 md:col-span-1">
-                  <label className="block text-label-md font-label-md uppercase tracking-wider">{t('unit_floor_lbl')}</label>
-                  <select 
-                    value={newUnit}
-                    onChange={(e) => setNewUnit(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-outline-variant focus:ring-2 focus:ring-primary focus:outline-none transition-all font-medium text-on-surface bg-surface-container-low"
-                  >
-                    {availableSpaces.map((opt, i) => (
-                      <option key={i} value={opt.unit}>{opt.unit} ({opt.area} m²)</option>
-                    ))}
-                    {availableSpaces.length === 0 && (
-                      <option value="">Tidak ada space tersedia</option>
-                    )}
-                  </select>
-                </div>
+                 {/* Unit Option */}
+                 <div className="space-y-2 col-span-2 md:col-span-1">
+                   <label className="block text-label-md font-label-md uppercase tracking-wider">Pilih Unit (Bisa lebih dari 1)</label>
+                   <div className="border border-outline-variant rounded-xl p-3 bg-surface-container-low max-h-40 overflow-y-auto space-y-2">
+                     {availableSpaces.map((opt, i) => {
+                       const isChecked = selectedUnits.includes(opt.unit);
+                       return (
+                         <label key={i} className="flex items-center gap-2.5 p-2 rounded hover:bg-surface-container-high cursor-pointer transition-colors">
+                           <input 
+                             type="checkbox"
+                             checked={isChecked}
+                             onChange={() => {
+                               if (isChecked) {
+                                 setSelectedUnits(selectedUnits.filter(u => u !== opt.unit));
+                               } else {
+                                 setSelectedUnits([...selectedUnits, opt.unit]);
+                               }
+                             }}
+                             className="rounded border-outline-variant text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                           />
+                           <div className="text-left">
+                             <p className="text-[11px] font-bold text-on-surface">{opt.unit}</p>
+                             <p className="text-[10px] text-on-surface-variant font-medium">{opt.area} m² — Rp {opt.rent.toLocaleString('id-ID')}/thn</p>
+                           </div>
+                         </label>
+                       );
+                     })}
+                     {availableSpaces.length === 0 && (
+                       <p className="text-[11px] text-on-surface-variant italic py-1">Tidak ada space tersedia</p>
+                     )}
+                   </div>
+                 </div>
 
                 {/* Start Date */}
                 <div className="space-y-2 col-span-2 md:col-span-1">

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from './lib/supabase';
 import Login from './components/Login';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -12,56 +13,31 @@ import Settings from './views/Settings';
 import TenantPortal from './views/TenantPortal';
 import Expenses from './views/Expenses';
 
+// ── Loading Screen ────────────────────────────────────────────
+function LoadingScreen() {
+  return (
+    <div className="flex h-screen w-full items-center justify-center bg-background flex-col gap-4">
+      <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+      <p className="text-sm font-semibold text-on-surface-variant">Memuat data dari database...</p>
+    </div>
+  );
+}
+
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [users, setUsers] = useState([
-    { id: 'USR-0001', name: 'Admin Graha Kaji', email: 'admin@gedungku.com', password: 'admin123', role: 'role_property_manager', initials: 'AG' },
-    { id: 'USR-1001', name: 'Budi Santoso', email: 'budi.santoso@gedungku.id', password: 'password123', role: 'role_property_manager', initials: 'BS' },
-    { id: 'USR-1002', name: 'Siti Aminah', email: 'siti.aminah@gedungku.id', password: 'password123', role: 'role_building_manager', initials: 'SA' },
-    { id: 'USR-1003', name: 'Rian Pratama', email: 'rian.pratama@gedungku.id', password: 'password123', role: 'role_technician', initials: 'RP' },
-    { id: 'USR-2001', name: 'Global Tech', email: 'tenant@gedungku.com', password: 'tenant123', role: 'role_tenant', initials: 'GT' }
-  ]);
   const [activeView, setActiveView] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [expenses, setExpenses] = useState([
-    { id: 'EXP-1001', title: 'Token Listrik AC Chiller lt.1', category: 'Token Listrik Unit', amount: 150000000, date: '2026-07-15', scope: 'Tenant Unit', description: 'Pembelian token untuk unit BlueTech' },
-    { id: 'EXP-1002', title: 'Listrik Lift & Koridor Utama', category: 'Listrik Public Area', amount: 120000000, date: '2026-07-12', scope: 'Public Area', description: 'Penerangan & utilitas public lift' },
-    { id: 'EXP-1003', title: 'Air PDAM & Izin Sumur', category: 'Tagihan Air PDAM', amount: 50000000, date: '2026-07-05', scope: 'Public Area', description: 'Tagihan air gedung utama' },
-    { id: 'EXP-1004', title: 'Gaji Kebersihan & Security', category: 'Gaji Kebersihan & Security', amount: 80000000, date: '2026-07-01', scope: 'Public Area', description: 'Pembayaran periodik staff' }
-  ]);
-
-  const handleAddExpense = (newExp) => {
-    setExpenses([newExp, ...expenses]);
-  };
-
-  const handleDeleteExpense = (id) => {
-    setExpenses(expenses.filter(e => e.id !== id));
-  };
-
-  // --- Seed Data States ---
-  const [tenants, setTenants] = useState([
-    { id: 'TNT-1011', company: 'BlueTech Indonesia, PT', unit: 'Fl. 1 - 1A', leaseStart: '15 Nov 2023', leaseEnd: '15 Nov 2024', dueDate: '15 Nov 2024', rent: 150000000, status: 'Active', payment: 'Paid', initials: 'BT' },
-    { id: 'TNT-2041', company: 'Creative Flow Studio', unit: 'Fl. 2 - 2A', leaseStart: '28 Oct 2022', leaseEnd: '28 Oct 2023', dueDate: '28 Oct 2023', rent: 120000000, status: 'Ending Soon', payment: 'Paid', initials: 'CR' },
-    { id: 'TNT-3082', company: 'Global Koneksi Mandiri', unit: 'Fl. 3 - 3', leaseStart: '05 Oct 2022', leaseEnd: '05 Oct 2023', dueDate: '05 Oct 2023', rent: 180000000, status: 'Active', payment: 'Late', initials: 'GK' },
-    { id: 'TNT-4015', company: 'Sinar Retailindo', unit: 'Fl. GF - Ruang Kerja GF', leaseStart: '12 Sep 2022', leaseEnd: '12 Sep 2023', dueDate: '12 Sep 2023', rent: 90000000, status: 'Expired', payment: 'Paid', initials: 'SR' },
-    { id: 'TNT-5021', company: 'Mega Astra Ventura', unit: 'Fl. Mezzanin - Ruang Direksi 1', leaseStart: '01 Dec 2023', leaseEnd: '01 Dec 2024', dueDate: '01 Dec 2024', rent: 250000000, status: 'Active', payment: 'Paid', initials: 'MA' }
-  ]);
-
-  const [tickets, setTickets] = useState([
-    { id: 'WO-2023-0045', title: 'Kebocoran Pipa Lantai 4', category: 'Plumbing', priority: 'High', status: 'New', location: 'Lantai 4, Pantry Timur', reporter: 'Penyewa Lt 4', description: 'Kebocoran pipa di ceiling area pantry timur lantai 4.', date: '18/07/2026', assignee: 'Budi Santoso', timeText: '2 jam lalu' },
-    { id: 'WO-2023-0046', title: 'Ganti Lampu Lobby Utama', category: 'Electrical', priority: 'Medium', status: 'New', location: 'Lobby, Area Resepsionis', reporter: 'Reception Desk', description: 'Lampu halogen redup dan berkedip.', date: '18/07/2026', assignee: 'Siti Aminah', timeText: '5 jam lalu' },
-    { id: 'WO-2023-0040', title: 'Perbaikan Lift No. 3', category: 'Elevator', priority: 'High', status: 'In Progress', location: 'Zona Lift B, Lobby', reporter: 'Security', description: 'Lift macet di lantai dasar.', date: '17/07/2026', assignee: 'Rahmat H.', timeText: '24 jam lalu' },
-    { id: 'WO-2023-0038', title: 'Servis AC Ruang Rapat A', category: 'HVAC', priority: 'Low', status: 'Waiting Sparepart', location: 'Lantai 2, Meeting Room A', reporter: 'Creative Flow', description: 'Kurang dingin, memerlukan penambahan freon.', date: '16/07/2026', assignee: 'Andi Wijaya', timeText: '2 hari lalu', sparepartNote: 'Menunggu Freon R32' },
-    { id: 'WO-2023-0035', title: 'Pengecekan Alarm Kebakaran', category: 'Fire Hydrant', priority: 'Low', status: 'Resolved', location: 'Seluruh Area Gedung', reporter: 'Engineering', description: 'Uji fungsi berkala sensor detektor asap dan bel alarm.', date: '18/07/2026', assignee: 'Doni Pratama', timeText: '3 jam lalu' }
-  ]);
-
-  const [visitors, setVisitors] = useState([
-    { id: 'VIS-9011', name: 'Stephen Strange', host: 'TechVanguard Indonesia', purpose: 'Business Meeting', checkIn: '--:--', checkOut: '--:--', status: 'Expected', date: '18/07/2026' },
-    { id: 'VIS-9012', name: 'Bruce Banner', host: 'RuangGuru', purpose: 'Interview', checkIn: '10:15', checkOut: '--:--', status: 'Checked In', date: '18/07/2026' },
-    { id: 'VIS-9013', name: 'Tony Stark', host: 'Tokopedia', purpose: 'Personal Visit', checkIn: '08:30', checkOut: '11:45', status: 'Checked Out', date: '18/07/2026' }
-  ]);
+  // ── Data States ───────────────────────────────────────────
+  const [tenants, setTenants] = useState([]);
+  const [tickets, setTickets] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [spaces, setSpaces] = useState([]);
+  const [accessCards, setAccessCards] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [visitors, setVisitors] = useState([]);
 
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'HVAC Temp Spike Alert', message: 'Zone 5 temperature reached 27.2°C (Warning)', type: 'warning', time: '10 min ago', read: false },
@@ -69,205 +45,286 @@ export default function App() {
     { id: 3, title: 'Weekly Load Test Scheduled', message: 'Generator weekly load test commences today at 22:00.', type: 'info', time: '3 hr ago', read: true }
   ]);
 
-  // --- Seed Data States for Spaces and Access Cards ---
-  const [spaces, setSpaces] = useState([
-    // --- Ground Floor ---
-    { id: 'SPC-GF01', unit: 'Fl. GF - Ruang Kerja GF', floor: 'GF', area: 150, status: 'Occupied', tenantId: 'TNT-4015', rent: 90000000, wing: 'Ground Floor' },
-    // --- Lantai 1 ---
-    { id: 'SPC-101', unit: 'Fl. 1 - 1A', floor: '1', area: 120, status: 'Occupied', tenantId: 'TNT-1011', rent: 150000000, wing: 'Unit A' },
-    { id: 'SPC-102', unit: 'Fl. 1 - 1B', floor: '1', area: 110, status: 'Available', tenantId: null, rent: 130000000, wing: 'Unit B' },
-    { id: 'SPC-103', unit: 'Fl. 1 - 1C', floor: '1', area: 105, status: 'Available', tenantId: null, rent: 120000000, wing: 'Unit C' },
-    // --- Lantai 2 ---
-    { id: 'SPC-201', unit: 'Fl. 2 - 2A', floor: '2', area: 120, status: 'Occupied', tenantId: 'TNT-2041', rent: 120000000, wing: 'Unit A' },
-    { id: 'SPC-202', unit: 'Fl. 2 - 2B', floor: '2', area: 110, status: 'Available', tenantId: null, rent: 115000000, wing: 'Unit B' },
-    { id: 'SPC-203', unit: 'Fl. 2 - 2C', floor: '2', area: 105, status: 'Available', tenantId: null, rent: 110000000, wing: 'Unit C' },
-    // --- Lantai 3 ---
-    { id: 'SPC-301', unit: 'Fl. 3 - 3', floor: '3', area: 350, status: 'Occupied', tenantId: 'TNT-3082', rent: 180000000, wing: 'Full Floor' },
-    // --- Mezzanin ---
-    { id: 'SPC-MZ1', unit: 'Fl. Mezzanin - Ruang Direksi 1', floor: 'Mezzanin', area: 80, status: 'Occupied', tenantId: 'TNT-5021', rent: 250000000, wing: 'Direksi' },
-    { id: 'SPC-MZ2', unit: 'Fl. Mezzanin - Ruang Direksi 2', floor: 'Mezzanin', area: 75, status: 'Available', tenantId: null, rent: 220000000, wing: 'Direksi' },
-  ]);
+  // ── Fetch All Data from Supabase ──────────────────────────
+  const fetchAllData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [
+        { data: tenantsData },
+        { data: ticketsData },
+        { data: expensesData },
+        { data: spacesData },
+        { data: cardsData },
+        { data: usersData },
+        { data: visitorsData },
+      ] = await Promise.all([
+        supabase.from('tenants').select('*').order('created_at', { ascending: true }),
+        supabase.from('tickets').select('*').order('created_at', { ascending: false }),
+        supabase.from('expenses').select('*').order('created_at', { ascending: false }),
+        supabase.from('spaces').select('*').order('created_at', { ascending: true }),
+        supabase.from('access_cards').select('*').order('created_at', { ascending: true }),
+        supabase.from('system_users').select('*').order('created_at', { ascending: true }),
+        supabase.from('visitors').select('*').order('created_at', { ascending: false }),
+      ]);
 
-  const [accessCards, setAccessCards] = useState([
-    { id: 'CARD-1001', cardNumber: '82019203', tenantId: 'TNT-1011', holderName: 'Ahmad Kurniawan', status: 'Active', assignedDate: '16 Nov 2023', accessLevel: 'Full Access' },
-    { id: 'CARD-1002', cardNumber: '82019204', tenantId: 'TNT-1011', holderName: 'Sarah Wijaya', status: 'Active', assignedDate: '16 Nov 2023', accessLevel: 'Staff' },
-    { id: 'CARD-2001', cardNumber: '71029384', tenantId: 'TNT-2041', holderName: 'Rian Pratama', status: 'Active', assignedDate: '29 Oct 2022', accessLevel: 'Staff' },
-    { id: 'CARD-3001', cardNumber: '62019283', tenantId: 'TNT-3082', holderName: 'Hendra Setiawan', status: 'Active', assignedDate: '06 Oct 2022', accessLevel: 'Full Access' },
-    { id: 'CARD-4001', cardNumber: '52019284', tenantId: 'TNT-4015', holderName: 'Siti Rahma', status: 'Suspended', assignedDate: '13 Sep 2022', accessLevel: 'Staff' },
-    { id: 'CARD-5001', cardNumber: '42019285', tenantId: 'TNT-5021', holderName: 'Denny Siregar', status: 'Active', assignedDate: '02 Dec 2023', accessLevel: 'VIP' }
-  ]);
+      if (tenantsData) setTenants(tenantsData);
+      if (ticketsData) setTickets(ticketsData.map(t => ({ ...t, timeText: t.time_text, sparepartNote: t.sparepart_note })));
+      if (expensesData) setExpenses(expensesData);
+      if (spacesData) setSpaces(spacesData.map(s => ({ ...s, tenantId: s.tenant_id })));
+      if (cardsData) setAccessCards(cardsData.map(c => ({ ...c, cardNumber: c.card_number, tenantId: c.tenant_id, holderName: c.holder_name, assignedDate: c.assigned_date, accessLevel: c.access_level })));
+      if (usersData) setUsers(usersData);
+      if (visitorsData) setVisitors(visitorsData.map(v => ({ ...v, checkIn: v.check_in, checkOut: v.check_out })));
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  // --- Handlers & Actions ---
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
+
+  // ── Notifications ─────────────────────────────────────────
   const handleMarkAllRead = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
   };
 
-  // Tenants actions
-  const handleAddTenant = (newTenant) => {
-    setTenants([newTenant, ...tenants]);
+  const addNotification = (title, message, type = 'info') => {
+    setNotifications(prev => [
+      { id: Date.now(), title, message, type, time: 'Just now', read: false },
+      ...prev
+    ]);
+  };
+
+  // ── TENANTS CRUD ──────────────────────────────────────────
+  const handleAddTenant = async (newTenant) => {
+    const { error } = await supabase.from('tenants').insert([newTenant]);
+    if (error) { console.error(error); return; }
+
+    // Mendukung multiple unit: pisahkan unit dengan koma
+    const units = newTenant.unit.split(',').map(u => u.trim());
     
-    // Mark matching space as Occupied
-    setSpaces(prevSpaces => 
-      prevSpaces.map(sp => sp.unit === newTenant.unit ? { ...sp, status: 'Occupied', tenantId: newTenant.id } : sp)
+    // Update status occupied untuk semua unit terkait di spaces
+    await Promise.all(
+      units.map(unitName => 
+        supabase.from('spaces')
+          .update({ status: 'Occupied', tenant_id: newTenant.id })
+          .eq('unit', unitName)
+      )
     );
 
-    setNotifications([
-      { id: Date.now(), title: 'New Tenant Registered', message: `${newTenant.company} registered for ${newTenant.unit}.`, type: 'info', time: 'Just now', read: false },
-      ...notifications
-    ]);
+    addNotification('New Tenant Registered', `${newTenant.company} registered for ${newTenant.unit}.`);
+    fetchAllData();
   };
 
-  const handleDeleteTenant = (id) => {
-    const deleted = tenants.find(t => t.id === id);
-    setTenants(tenants.filter(t => t.id !== id));
-    if (deleted) {
-      // Mark matching space as Available
-      setSpaces(prevSpaces => 
-        prevSpaces.map(sp => sp.unit === deleted.unit ? { ...sp, status: 'Available', tenantId: null } : sp)
-      );
+  const handleDeleteTenant = async (id) => {
+    const { error } = await supabase.from('tenants').delete().eq('id', id);
+    if (error) { console.error(error); return; }
 
-      // Clean up access cards of this tenant
-      setAccessCards(prevCards => 
-        prevCards.filter(c => c.tenantId !== id)
-      );
-
-      setNotifications([
-        { id: Date.now(), title: 'Lease Cancelled', message: `${deleted.company} lease terminated.`, type: 'warning', time: 'Just now', read: false },
-        ...notifications
-      ]);
-    }
+    // Bebaskan semua unit (spaces) yang memiliki tenant_id ini
+    await supabase.from('spaces')
+      .update({ status: 'Available', tenant_id: null })
+      .eq('tenant_id', id);
+      
+    await supabase.from('access_cards').delete().eq('tenant_id', id);
+    addNotification('Lease Cancelled', `Lease terminated for tenant.`, 'warning');
+    
+    fetchAllData();
   };
 
-  // Access Card Actions
-  const handleAssignAccessCard = (newCard) => {
-    setAccessCards([newCard, ...accessCards]);
+  // ── ACCESS CARDS CRUD ─────────────────────────────────────
+  const handleAssignAccessCard = async (newCard) => {
+    const dbCard = {
+      id: newCard.id,
+      card_number: newCard.cardNumber,
+      tenant_id: newCard.tenantId,
+      holder_name: newCard.holderName,
+      status: newCard.status,
+      assigned_date: newCard.assignedDate,
+      access_level: newCard.accessLevel,
+    };
+    const { error } = await supabase.from('access_cards').insert([dbCard]);
+    if (error) { console.error(error); return; }
     const tenantName = tenants.find(t => t.id === newCard.tenantId)?.company || 'Tenant';
-    setNotifications([
-      { id: Date.now(), title: 'Access Card Issued', message: `Card ${newCard.cardNumber} issued to ${newCard.holderName} (${tenantName}).`, type: 'info', time: 'Just now', read: false },
-      ...notifications
-    ]);
+    addNotification('Access Card Issued', `Card ${newCard.cardNumber} issued to ${newCard.holderName} (${tenantName}).`);
+    fetchAllData();
   };
 
-  const handleToggleCardStatus = (cardId) => {
-    setAccessCards(accessCards.map(c => 
-      c.id === cardId ? { ...c, status: c.status === 'Active' ? 'Suspended' : 'Active' } : c
-    ));
+  const handleToggleCardStatus = async (cardId) => {
+    const card = accessCards.find(c => c.id === cardId);
+    if (!card) return;
+    const newStatus = card.status === 'Active' ? 'Suspended' : 'Active';
+    await supabase.from('access_cards').update({ status: newStatus }).eq('id', cardId);
+    fetchAllData();
   };
 
-  const handleRevokeCard = (cardId) => {
+  const handleRevokeCard = async (cardId) => {
     const revoked = accessCards.find(c => c.id === cardId);
-    setAccessCards(accessCards.filter(c => c.id !== cardId));
-    if (revoked) {
-      setNotifications([
-        { id: Date.now(), title: 'Access Card Revoked', message: `Card ${revoked.cardNumber} for ${revoked.holderName} was deactivated.`, type: 'warning', time: 'Just now', read: false },
-        ...notifications
-      ]);
-    }
+    const { error } = await supabase.from('access_cards').delete().eq('id', cardId);
+    if (error) { console.error(error); return; }
+    if (revoked) addNotification('Access Card Revoked', `Card ${revoked.card_number || revoked.cardNumber} for ${revoked.holder_name || revoked.holderName} was deactivated.`, 'warning');
+    fetchAllData();
   };
 
-  // Tickets actions
-  const handleAddTicket = (newTicket) => {
-    setTickets([newTicket, ...tickets]);
-    setNotifications([
-      { id: Date.now(), title: 'New Ticket Opened', message: `[${newTicket.priority}] ${newTicket.title}`, type: newTicket.priority === 'Urgent' ? 'danger' : 'info', time: 'Just now', read: false },
-      ...notifications
-    ]);
+  // ── TICKETS CRUD ──────────────────────────────────────────
+  const handleAddTicket = async (newTicket) => {
+    const dbTicket = {
+      id: newTicket.id,
+      title: newTicket.title,
+      category: newTicket.category,
+      priority: newTicket.priority,
+      status: newTicket.status,
+      location: newTicket.location,
+      reporter: newTicket.reporter,
+      description: newTicket.description,
+      date: newTicket.date,
+      assignee: newTicket.assignee,
+      time_text: newTicket.timeText,
+      sparepart_note: newTicket.sparepartNote || null,
+    };
+    const { error } = await supabase.from('tickets').insert([dbTicket]);
+    if (error) { console.error(error); return; }
+    addNotification('New Ticket Opened', `[${newTicket.priority}] ${newTicket.title}`, newTicket.priority === 'Urgent' ? 'danger' : 'info');
+    fetchAllData();
   };
 
-  const handleUpdateTicketStatus = (id, newStatus) => {
-    setTickets(tickets.map(t => t.id === id ? { ...t, status: newStatus } : t));
+  const handleUpdateTicketStatus = async (id, newStatus) => {
+    await supabase.from('tickets').update({ status: newStatus }).eq('id', id);
+    fetchAllData();
   };
 
-  const handleAssignTechnician = (id, techName) => {
-    setTickets(tickets.map(t => t.id === id ? { ...t, assignee: techName, status: t.status === 'New' ? 'In Progress' : t.status } : t));
+  const handleAssignTechnician = async (id, techName) => {
+    const ticket = tickets.find(t => t.id === id);
+    const newStatus = ticket && ticket.status === 'New' ? 'In Progress' : ticket?.status;
+    await supabase.from('tickets').update({ assignee: techName, status: newStatus }).eq('id', id);
+    fetchAllData();
   };
 
-  // Visitors actions
-  const handleAddVisitor = (newVis) => {
-    setVisitors([newVis, ...visitors]);
+  // ── VISITORS CRUD ─────────────────────────────────────────
+  const handleAddVisitor = async (newVis) => {
+    const dbVis = {
+      id: newVis.id,
+      name: newVis.name,
+      host: newVis.host,
+      purpose: newVis.purpose,
+      check_in: newVis.checkIn || '--:--',
+      check_out: newVis.checkOut || '--:--',
+      status: newVis.status,
+      date: newVis.date,
+    };
+    const { error } = await supabase.from('visitors').insert([dbVis]);
+    if (error) { console.error(error); return; }
+    fetchAllData();
   };
 
-  const handleCheckInVisitor = (id) => {
+  const handleCheckInVisitor = async (id) => {
     const timeNow = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-    setVisitors(visitors.map(v => v.id === id ? { ...v, status: 'Checked In', checkIn: timeNow } : v));
+    await supabase.from('visitors').update({ status: 'Checked In', check_in: timeNow }).eq('id', id);
+    fetchAllData();
   };
 
-  const handleCheckOutVisitor = (id) => {
+  const handleCheckOutVisitor = async (id) => {
     const timeNow = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-    setVisitors(visitors.map(v => v.id === id ? { ...v, status: 'Checked Out', checkOut: timeNow } : v));
+    await supabase.from('visitors').update({ status: 'Checked Out', check_out: timeNow }).eq('id', id);
+    fetchAllData();
   };
 
-  // Spaces actions
-  const handleAddSpace = (newSpace) => {
-    setSpaces([newSpace, ...spaces]);
-    setNotifications([
-      { id: Date.now(), title: 'Space Baru Ditambahkan', message: `Unit ${newSpace.unit} (${newSpace.wing}) berhasil ditambahkan ke inventaris.`, type: 'info', time: 'Just now', read: false },
-      ...notifications
-    ]);
+  // ── SPACES CRUD ───────────────────────────────────────────
+  const handleAddSpace = async (newSpace) => {
+    const dbSpace = {
+      id: newSpace.id,
+      unit: newSpace.unit,
+      floor: newSpace.floor,
+      area: newSpace.area,
+      status: newSpace.status,
+      tenant_id: newSpace.tenantId || null,
+      rent: newSpace.rent,
+      wing: newSpace.wing,
+    };
+    const { error } = await supabase.from('spaces').insert([dbSpace]);
+    if (error) { console.error(error); return; }
+    addNotification('Space Baru Ditambahkan', `Unit ${newSpace.unit} berhasil ditambahkan ke inventaris.`);
+    fetchAllData();
   };
 
-  const handleUpdateSpace = (updatedSpace) => {
-    setSpaces(spaces.map(s => s.id === updatedSpace.id ? updatedSpace : s));
-    setNotifications([
-      { id: Date.now(), title: 'Detail Space Diperbarui', message: `Unit ${updatedSpace.unit} berhasil diperbarui.`, type: 'info', time: 'Just now', read: false },
-      ...notifications
-    ]);
+  const handleUpdateSpace = async (updatedSpace) => {
+    const dbSpace = {
+      unit: updatedSpace.unit,
+      floor: updatedSpace.floor,
+      area: updatedSpace.area,
+      status: updatedSpace.status,
+      tenant_id: updatedSpace.tenantId || null,
+      rent: updatedSpace.rent,
+      wing: updatedSpace.wing,
+    };
+    const { error } = await supabase.from('spaces').update(dbSpace).eq('id', updatedSpace.id);
+    if (error) { console.error(error); return; }
+    addNotification('Detail Space Diperbarui', `Unit ${updatedSpace.unit} berhasil diperbarui.`);
+    fetchAllData();
   };
 
-  const handleDeleteSpace = (spaceId) => {
+  const handleDeleteSpace = async (spaceId) => {
     const deleted = spaces.find(s => s.id === spaceId);
     if (!deleted) return false;
-    
-    // Check if space is occupied
     if (deleted.status === 'Occupied') {
       alert('Tidak dapat menghapus space yang sedang aktif disewa (Occupied)! Silakan selesaikan kontrak tenant terlebih dahulu.');
       return false;
     }
-    
-    setSpaces(spaces.filter(s => s.id !== spaceId));
-    setNotifications([
-      { id: Date.now(), title: 'Space Dihapus', message: `Unit ${deleted.unit} dihapus dari inventaris.`, type: 'warning', time: 'Just now', read: false },
-      ...notifications
-    ]);
+    const { error } = await supabase.from('spaces').delete().eq('id', spaceId);
+    if (error) { console.error(error); return false; }
+    addNotification('Space Dihapus', `Unit ${deleted.unit} dihapus dari inventaris.`, 'warning');
+    fetchAllData();
     return true;
   };
 
-  // User Management Actions
-  const handleAddUser = (newUser) => {
-    setUsers([...users, newUser]);
-    setNotifications([
-      { id: Date.now(), title: 'User Baru Ditambahkan', message: `${newUser.name} (${newUser.email}) telah terdaftar di sistem.`, type: 'info', time: 'Just now', read: false },
-      ...notifications
-    ]);
+  // ── EXPENSES CRUD ─────────────────────────────────────────
+  const handleAddExpense = async (newExp) => {
+    const { error } = await supabase.from('expenses').insert([newExp]);
+    if (error) { console.error(error); return; }
+    addNotification('Biaya Baru Ditambahkan', `${newExp.title} (${newExp.category}) sebesar Rp ${newExp.amount.toLocaleString('id-ID')}.`);
+    fetchAllData();
   };
 
-  const handleUpdateUser = (updatedUser) => {
-    setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
+  const handleDeleteExpense = async (id) => {
+    const { error } = await supabase.from('expenses').delete().eq('id', id);
+    if (error) { console.error(error); return; }
+    fetchAllData();
+  };
+
+  // ── USERS CRUD ────────────────────────────────────────────
+  const handleAddUser = async (newUser) => {
+    const { error } = await supabase.from('system_users').insert([newUser]);
+    if (error) { console.error(error); return; }
+    addNotification('User Baru Ditambahkan', `${newUser.name} (${newUser.email}) telah terdaftar di sistem.`);
+    fetchAllData();
+  };
+
+  const handleUpdateUser = async (updatedUser) => {
+    const { error } = await supabase.from('system_users').update(updatedUser).eq('id', updatedUser.id);
+    if (error) { console.error(error); return; }
     if (currentUser && currentUser.id === updatedUser.id) {
       setCurrentUser(updatedUser);
     }
-    setNotifications([
-      { id: Date.now(), title: 'Profil Pengguna Diperbarui', message: `Data pengguna ${updatedUser.name} telah diperbarui.`, type: 'info', time: 'Just now', read: false },
-      ...notifications
-    ]);
+    addNotification('Profil Pengguna Diperbarui', `Data pengguna ${updatedUser.name} telah diperbarui.`);
+    fetchAllData();
   };
 
-  const handleDeleteUser = (userId) => {
+  const handleDeleteUser = async (userId) => {
     if (currentUser && currentUser.id === userId) {
       alert('Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif digunakan!');
       return false;
     }
     const deleted = users.find(u => u.id === userId);
     if (!deleted) return false;
-
-    setUsers(users.filter(u => u.id !== userId));
-    setNotifications([
-      { id: Date.now(), title: 'User Dihapus', message: `Akses untuk user ${deleted.name} telah dicabut.`, type: 'warning', time: 'Just now', read: false },
-      ...notifications
-    ]);
+    const { error } = await supabase.from('system_users').delete().eq('id', userId);
+    if (error) { console.error(error); return false; }
+    addNotification('User Dihapus', `Akses untuk user ${deleted.name} telah dicabut.`, 'warning');
+    fetchAllData();
     return true;
   };
 
+  // ── AUTH ──────────────────────────────────────────────────
   const handleLogin = (user) => {
     setIsLoggedIn(true);
     setCurrentUser(user);
@@ -279,32 +336,32 @@ export default function App() {
     setActiveView('dashboard');
   };
 
-  // Render view router
+  // ── Router ────────────────────────────────────────────────
   const renderActiveView = () => {
     switch (activeView) {
       case 'dashboard':
         return (
-          <DashboardOverview 
-            onViewChange={setActiveView} 
-            tickets={tickets} 
-            tenants={tenants} 
+          <DashboardOverview
+            onViewChange={setActiveView}
+            tickets={tickets}
+            tenants={tenants}
           />
         );
       case 'tenants':
         return (
-          <TenantManagement 
-            tenants={tenants} 
-            onAddTenant={handleAddTenant} 
-            onDeleteTenant={handleDeleteTenant} 
+          <TenantManagement
+            tenants={tenants}
+            onAddTenant={handleAddTenant}
+            onDeleteTenant={handleDeleteTenant}
             searchTerm={searchTerm}
             spaces={spaces}
           />
         );
       case 'maintenance':
         return (
-          <MaintenanceTickets 
-            tickets={tickets} 
-            onAddTicket={handleAddTicket} 
+          <MaintenanceTickets
+            tickets={tickets}
+            onAddTicket={handleAddTicket}
             onUpdateTicketStatus={handleUpdateTicketStatus}
             onAssignTechnician={handleAssignTechnician}
           />
@@ -325,7 +382,7 @@ export default function App() {
         return <Reports currentUser={currentUser} expenses={expenses} />;
       case 'settings':
         return (
-          <Settings 
+          <Settings
             tenants={tenants}
             onAddTenant={handleAddTenant}
             onDeleteTenant={handleDeleteTenant}
@@ -349,16 +406,20 @@ export default function App() {
     }
   };
 
+  // ── Loading State ─────────────────────────────────────────
+  if (isLoading) return <LoadingScreen />;
+
+  // ── Login Gate ────────────────────────────────────────────
   if (!isLoggedIn) {
     return <Login users={users} onLoginSuccess={handleLogin} />;
   }
 
-  // Render Tenant Portal directly for tenant role
+  // ── Tenant Portal ─────────────────────────────────────────
   if (currentUser && currentUser.role === 'role_tenant') {
     return (
-      <TenantPortal 
-        currentUser={currentUser} 
-        onLogout={handleLogout} 
+      <TenantPortal
+        currentUser={currentUser}
+        onLogout={handleLogout}
         tickets={tickets}
         onAddTicket={handleAddTicket}
       />
@@ -367,24 +428,19 @@ export default function App() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-on-surface">
-      {/* Sidebar Navigation */}
-      <Sidebar 
-        activeView={activeView} 
-        onViewChange={setActiveView} 
-        onLogout={handleLogout} 
+      <Sidebar
+        activeView={activeView}
+        onViewChange={setActiveView}
+        onLogout={handleLogout}
       />
-
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header 
-          notifications={notifications} 
-          onMarkAllRead={handleMarkAllRead} 
+        <Header
+          notifications={notifications}
+          onMarkAllRead={handleMarkAllRead}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           currentUser={currentUser}
         />
-        
-        {/* Scrollable View Content */}
         <main className="flex-1 overflow-y-auto p-gutter bg-background">
           <div className="max-w-[container-max] mx-auto w-full">
             {renderActiveView()}

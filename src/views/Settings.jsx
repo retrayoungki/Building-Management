@@ -46,7 +46,7 @@ export default function Settings({
 
   // --- Form States for Tenant Registration ---
   const [newCompany, setNewCompany] = useState('');
-  const [newUnit, setNewUnit] = useState('');
+  const [selectedUnits, setSelectedUnits] = useState([]); // array of selected unit names
   const [newLeaseStart, setNewLeaseStart] = useState('');
   const [newLeaseEnd, setNewLeaseEnd] = useState('');
   const [newRent, setNewRent] = useState('');
@@ -227,20 +227,30 @@ export default function Settings({
   // Handle Tenant Registration Form Submit
   const handleTenantSubmit = (e) => {
     e.preventDefault();
-    if (!newCompany || !newUnit || !newLeaseStart || !newLeaseEnd) return;
+    if (!newCompany || selectedUnits.length === 0 || !newLeaseStart || !newLeaseEnd) {
+      alert('Mohon isi nama perusahaan, pilih minimal 1 unit, dan tentukan masa sewa!');
+      return;
+    }
 
     const words = newCompany.split(' ');
     const initials = words.length > 1 
       ? (words[0].charAt(0) + words[1].charAt(0)).toUpperCase()
       : newCompany.slice(0, 2).toUpperCase();
 
-    const selectedSpace = spaces.find(s => s.unit === newUnit);
-    const calculatedRent = parseInt(newRent) || (selectedSpace ? selectedSpace.rent : 150000000);
+    const jointUnits = selectedUnits.join(', ');
+    
+    // Hitung total sewa untuk unit-unit terpilih jika tidak diinput manual
+    const totalSelectedRent = selectedUnits.reduce((sum, unitName) => {
+      const sp = spaces.find(s => s.unit === unitName);
+      return sum + (sp ? sp.rent : 0);
+    }, 0);
+
+    const calculatedRent = parseInt(newRent) || totalSelectedRent || 150000000;
 
     const newTenant = {
       id: 'TNT-' + Math.floor(1000 + Math.random() * 9000),
       company: newCompany,
-      unit: newUnit,
+      unit: jointUnits,
       leaseStart: newLeaseStart,
       leaseEnd: newLeaseEnd,
       dueDate: new Date(newLeaseEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
@@ -251,11 +261,11 @@ export default function Settings({
     };
 
     onAddTenant(newTenant);
-    alert(`Tenant ${newCompany} berhasil ditambahkan pada unit ${newUnit}`);
+    alert(`Tenant ${newCompany} berhasil ditambahkan pada unit: ${jointUnits}`);
 
     // Reset Form
     setNewCompany('');
-    setNewUnit('');
+    setSelectedUnits([]);
     setNewLeaseStart('');
     setNewLeaseEnd('');
     setNewRent('');
@@ -287,7 +297,7 @@ export default function Settings({
 
   // Switch to Tenant Registration and auto-select unit from map
   const handleAssignUnitFromMap = (space) => {
-    setNewUnit(space.unit);
+    setSelectedUnits([space.unit]);
     setNewRent(space.rent.toString());
     setActiveTab('tenants');
     // Pre-fill lease dates for convenience
@@ -464,25 +474,35 @@ export default function Settings({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-outline uppercase tracking-wider block">{t('unit_floor_lbl')}</label>
-                  <select 
-                    required
-                    value={newUnit}
-                    onChange={(e) => {
-                      setNewUnit(e.target.value);
-                      const matched = spaces.find(s => s.unit === e.target.value);
-                      if (matched) setNewRent(matched.rent.toString());
-                    }}
-                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg outline-none focus:ring-1 focus:ring-primary font-medium text-on-surface"
-                  >
-                    <option value="">-- Pilih Unit --</option>
-                    {availableSpaces.map(sp => (
-                      <option key={sp.id} value={sp.unit}>{sp.unit} ({sp.area} m²)</option>
-                    ))}
+                  <label className="text-outline uppercase tracking-wider block">Pilih Unit (Bisa lebih dari 1)</label>
+                  <div className="border border-outline-variant rounded-lg p-3 bg-surface-container-low max-h-48 overflow-y-auto space-y-2">
+                    {availableSpaces.map(sp => {
+                      const isChecked = selectedUnits.includes(sp.unit);
+                      return (
+                        <label key={sp.id} className="flex items-center gap-2.5 p-2 rounded hover:bg-surface-container-high cursor-pointer transition-colors">
+                          <input 
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              if (isChecked) {
+                                setSelectedUnits(selectedUnits.filter(u => u !== sp.unit));
+                              } else {
+                                setSelectedUnits([...selectedUnits, sp.unit]);
+                              }
+                            }}
+                            className="rounded border-outline-variant text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                          />
+                          <div className="text-left">
+                            <p className="text-xs font-bold text-on-surface">{sp.unit}</p>
+                            <p className="text-[10px] text-on-surface-variant font-medium">{sp.area} m² — Rp {sp.rent.toLocaleString('id-ID')}/thn</p>
+                          </div>
+                        </label>
+                      );
+                    })}
                     {availableSpaces.length === 0 && (
-                      <option disabled>Tidak ada space tersedia</option>
+                      <p className="text-[11px] text-on-surface-variant italic py-2">Tidak ada space tersedia</p>
                     )}
-                  </select>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -522,7 +542,7 @@ export default function Settings({
                 <div className="pt-4 border-t border-outline-variant flex justify-end">
                   <button 
                     type="submit" 
-                    disabled={availableSpaces.length === 0 && !newUnit}
+                    disabled={selectedUnits.length === 0}
                     className="w-full bg-primary hover:bg-[#001c59] disabled:bg-outline-variant text-white font-bold py-2.5 rounded-lg shadow transition-colors flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Plus className="w-4 h-4" /> {t('simpan')}
