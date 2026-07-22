@@ -2,17 +2,35 @@ import React, { useState } from 'react';
 import { ChevronRight, ArrowLeft, UploadCloud } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
-export default function TenantDetail({ tenant, onBack }) {
+export default function TenantDetail({ tenant, onBack, onUpdateTenant }) {
   const { t } = useLanguage();
   const [showAddTicketModal, setShowAddTicketModal] = useState(false);
   const [showUploadDocModal, setShowUploadDocModal] = useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [showSendMessageModal, setShowSendMessageModal] = useState(false);
+
+  // Payment History State (Empty by default as requested)
+  const [paymentHistory, setPaymentHistory] = useState([]);
+
+  // Editable Profile States
+  const [companyName, setCompanyName] = useState(tenant.company || '');
+  const [contactPerson, setContactPerson] = useState(tenant.contact || 'Dian Sastroatmodjo');
+  const [contactRole, setContactRole] = useState(tenant.contactRole || 'General Affairs Manager');
+  const [contactEmail, setContactEmail] = useState(tenant.email || 'dian.s@inovasi-tech.co.id');
+  const [contactPhone, setContactPhone] = useState(tenant.phone || '+62 812-3456-7890');
+  const [address, setAddress] = useState(tenant.unit ? `${tenant.unit}, East Wing` : 'Level 42, Suite 4201 - 4210, East Wing');
+
+  // Send Message Form States
+  const [msgSubject, setMsgSubject] = useState('');
+  const [msgContent, setMsgContent] = useState('');
+
   const [ticketsList, setTicketsList] = useState([
     { id: '#TK-9921', title: 'Masalah AC di Ruang Server (Suhu tidak stabil)', status: 'IN PROGRESS', reporter: 'Budi (IT Support)', date: '12 Ags 2024, 09:15 WIB', desc: 'Teknisi sedang dalam perjalanan untuk pengecekan freon dan kompresor.', type: 'urgent' },
     { id: '#TK-8840', title: 'Penggantian Lampu LED di Lobby Depan', status: 'COMPLETED', reporter: 'Siti (Receptionist)', date: '05 Ags 2024, 14:00 WIB', desc: 'Diselesaikan pada 06 Ags 2024 oleh tim Maintenance.', type: 'normal' },
     { id: '#TK-8712', title: 'Kebocoran Pipa di Pantry Level 42', status: 'COMPLETED', reporter: 'Dian', date: '22 Jul 2024', desc: 'Perbaikan pipa bocor dan pembersihan area terdampak selesai.', type: 'normal' }
   ]);
 
-  // Form states
+  // Form states for tickets
   const [newTicketTitle, setNewTicketTitle] = useState('');
   const [newTicketDesc, setNewTicketDesc] = useState('');
 
@@ -24,7 +42,7 @@ export default function TenantDetail({ tenant, onBack }) {
       id: `#TK-${Math.floor(1000 + Math.random() * 9000)}`,
       title: newTicketTitle,
       status: 'IN PROGRESS',
-      reporter: 'Dian Sastroatmodjo',
+      reporter: contactPerson,
       date: 'Hari ini, ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
       desc: newTicketDesc,
       type: 'urgent'
@@ -36,15 +54,43 @@ export default function TenantDetail({ tenant, onBack }) {
     setShowAddTicketModal(false);
   };
 
+  const handleSaveProfile = (e) => {
+    e.preventDefault();
+    if (!companyName || !contactPerson) return;
+    
+    if (onUpdateTenant) {
+      onUpdateTenant({
+        ...tenant,
+        company: companyName,
+        contact: contactPerson,
+        email: contactEmail,
+        phone: contactPhone,
+        unit: address.split(',')[0]
+      });
+    }
+
+    alert(`Profil perusahaan ${companyName} berhasil diperbarui!`);
+    setShowEditProfileModal(false);
+  };
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!msgSubject || !msgContent) return;
+    alert(`Pesan dengan subjek "${msgSubject}" telah berhasil dikirim ke ${companyName}!`);
+    setMsgSubject('');
+    setMsgContent('');
+    setShowSendMessageModal(false);
+  };
+
   const tenantDetails = {
-    address: tenant.unit ? `${tenant.unit}, East Wing` : 'Level 42, Suite 4201 - 4210, East Wing',
-    contactPerson: tenant.contact || 'Dian Sastroatmodjo',
-    contactRole: 'General Affairs Manager',
-    email: tenant.email || 'dian.s@inovasi-tech.co.id',
-    phone: tenant.phone || '+62 812-3456-7890',
+    address: address,
+    contactPerson: contactPerson,
+    contactRole: contactRole,
+    email: contactEmail,
+    phone: contactPhone,
     contractId: tenant.contractId || 'KTR-2023-042',
-    areaSize: '1,240 m²',
-    duration: '48 Bulan',
+    areaSize: tenant.areaSize || '1,240 m²',
+    duration: tenant.duration || '48 Bulan',
     progress: 75,
     leaseStart: tenant.leaseStart || '12 Jan 2023',
     leaseEnd: tenant.leaseEnd || '11 Jan 2027',
@@ -61,7 +107,7 @@ export default function TenantDetail({ tenant, onBack }) {
           <span>{t('tenants')}</span>
         </button>
         <ChevronRight className="w-3 h-3 text-outline" />
-        <span className="text-primary font-bold">{tenant.company}</span>
+        <span className="text-primary font-bold">{companyName}</span>
       </nav>
 
       {/* Tenant Profile Header Section */}
@@ -76,7 +122,7 @@ export default function TenantDetail({ tenant, onBack }) {
 
           {/* Logo */}
           <div className="w-32 h-32 rounded-xl border border-outline-variant bg-white flex items-center justify-center p-4 shrink-0 shadow-inner">
-            {tenant.company === 'BlueTech Indonesia, PT' || tenant.company === 'PT. Inovasi Teknologi Nusantara' ? (
+            {companyName === 'BlueTech Indonesia, PT' || companyName === 'PT. Inovasi Teknologi Nusantara' ? (
               <img 
                 className="max-w-full h-auto object-contain rounded" 
                 src={tenantDetails.logoUrl} 
@@ -84,7 +130,7 @@ export default function TenantDetail({ tenant, onBack }) {
               />
             ) : (
               <div className="w-full h-full rounded bg-primary-container/10 flex items-center justify-center text-primary font-extrabold text-3xl">
-                {tenant.initials || 'TN'}
+                {tenant.initials || companyName.slice(0, 2).toUpperCase() || 'TN'}
               </div>
             )}
           </div>
@@ -93,33 +139,39 @@ export default function TenantDetail({ tenant, onBack }) {
           <div className="flex-1 space-y-4">
             <div>
               <h2 className="font-headline-lg text-headline-lg text-on-surface text-2xl font-extrabold leading-tight">
-                {tenant.company}
+                {companyName}
               </h2>
               <p className="font-body-md text-body-md text-on-surface-variant flex items-center gap-2 mt-1.5 font-medium text-xs">
                 <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 0" }}>location_on</span>
-                <span>{tenantDetails.address}</span>
+                <span>{address}</span>
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-outline-variant/30">
               <div>
                 <p className="text-[10px] uppercase font-extrabold text-on-surface-variant tracking-wider">{t('contact_person')}</p>
-                <p className="font-body-md text-body-md font-bold text-on-surface mt-0.5">{tenantDetails.contactPerson}</p>
-                <p className="text-[11px] text-on-surface-variant font-medium mt-0.5">{tenantDetails.contactRole}</p>
+                <p className="font-body-md text-body-md font-bold text-on-surface mt-0.5">{contactPerson}</p>
+                <p className="text-[11px] text-on-surface-variant font-medium mt-0.5">{contactRole}</p>
               </div>
               <div>
                 <p className="text-[10px] uppercase font-extrabold text-on-surface-variant tracking-wider">{t('contact_email')}</p>
-                <p className="font-body-md text-body-md font-bold text-on-surface mt-0.5">{tenantDetails.email}</p>
-                <p className="text-[11px] text-on-surface-variant font-semibold mt-0.5">{tenantDetails.phone}</p>
+                <p className="font-body-md text-body-md font-bold text-on-surface mt-0.5">{contactEmail}</p>
+                <p className="text-[11px] text-on-surface-variant font-semibold mt-0.5">{contactPhone}</p>
               </div>
             </div>
 
             <div className="pt-4 flex gap-3">
-              <button className="bg-primary hover:bg-[#001c59] text-white px-4 py-2 rounded-lg font-label-md text-xs font-bold flex items-center gap-2 transition-all active:scale-95 shadow">
+              <button 
+                onClick={() => setShowEditProfileModal(true)}
+                className="bg-primary hover:bg-[#001c59] text-white px-4 py-2 rounded-lg font-label-md text-xs font-bold flex items-center gap-2 transition-all active:scale-95 shadow cursor-pointer"
+              >
                 <span className="material-symbols-outlined text-[18px]">edit</span>
                 {t('edit_profile')}
               </button>
-              <button className="border border-outline hover:bg-slate-50 text-on-surface px-4 py-2 rounded-lg font-label-md text-xs font-bold flex items-center gap-2 transition-colors">
+              <button 
+                onClick={() => setShowSendMessageModal(true)}
+                className="border border-outline hover:bg-slate-50 text-on-surface px-4 py-2 rounded-lg font-label-md text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"
+              >
                 <span className="material-symbols-outlined text-[18px]">mail</span>
                 {t('send_msg')}
               </button>
@@ -197,70 +249,34 @@ export default function TenantDetail({ tenant, onBack }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/60 font-semibold text-xs text-on-surface">
-                {/* August */}
-                <tr className="hover:bg-surface-container-low transition-colors">
-                  <td className="py-4 px-4 font-bold text-on-surface">Agustus 2024</td>
-                  <td className="py-4 px-4 text-on-surface-variant font-mono">INV/2024/08/ITN</td>
-                  <td className="py-4 px-4 font-bold">452,000,000</td>
-                  <td className="py-4 px-4">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
-                      {t('terbayar')}
-                    </span>
-                  </td>
-                  <td className="py-4 px-4 text-primary">
-                    <span className="material-symbols-outlined cursor-pointer hover:scale-110 transition-transform">
-                      download
-                    </span>
-                  </td>
-                </tr>
-                {/* July */}
-                <tr className="hover:bg-surface-container-low transition-colors">
-                  <td className="py-4 px-4 font-bold text-on-surface">Juli 2024</td>
-                  <td className="py-4 px-4 text-on-surface-variant font-mono">INV/2024/07/ITN</td>
-                  <td className="py-4 px-4 font-bold">452,000,000</td>
-                  <td className="py-4 px-4">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
-                      {t('terbayar')}
-                    </span>
-                  </td>
-                  <td className="py-4 px-4 text-primary">
-                    <span className="material-symbols-outlined cursor-pointer hover:scale-110 transition-transform">
-                      download
-                    </span>
-                  </td>
-                </tr>
-                {/* June */}
-                <tr className="hover:bg-surface-container-low transition-colors">
-                  <td className="py-4 px-4 font-bold text-on-surface">Juni 2024</td>
-                  <td className="py-4 px-4 text-on-surface-variant font-mono">INV/2024/06/ITN</td>
-                  <td className="py-4 px-4 font-bold">452,000,000</td>
-                  <td className="py-4 px-4">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
-                      {t('terbayar')}
-                    </span>
-                  </td>
-                  <td className="py-4 px-4 text-primary">
-                    <span className="material-symbols-outlined cursor-pointer hover:scale-110 transition-transform">
-                      download
-                    </span>
-                  </td>
-                </tr>
-                {/* May */}
-                <tr className="hover:bg-surface-container-low transition-colors">
-                  <td className="py-4 px-4 font-bold text-on-surface">Mei 2024</td>
-                  <td className="py-4 px-4 text-on-surface-variant font-mono">INV/2024/05/ITN</td>
-                  <td className="py-4 px-4 font-bold">452,000,000</td>
-                  <td className="py-4 px-4">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700 border border-yellow-200">
-                      {t('proses')}
-                    </span>
-                  </td>
-                  <td className="py-4 px-4 text-primary">
-                    <span className="material-symbols-outlined cursor-pointer hover:scale-110 transition-transform">
-                      download
-                    </span>
-                  </td>
-                </tr>
+                {paymentHistory.map((item, idx) => (
+                  <tr key={idx} className="hover:bg-surface-container-low transition-colors">
+                    <td className="py-4 px-4 font-bold text-on-surface">{item.period}</td>
+                    <td className="py-4 px-4 text-on-surface-variant font-mono">{item.invoiceId}</td>
+                    <td className="py-4 px-4 font-bold">Rp {item.amount.toLocaleString('id-ID')}</td>
+                    <td className="py-4 px-4">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                        item.status === 'Paid' || item.status === 'TERBAYAR'
+                          ? 'bg-green-100 text-green-700 border-green-200'
+                          : 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                      }`}>
+                        {item.status}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 text-primary">
+                      <span className="material-symbols-outlined cursor-pointer hover:scale-110 transition-transform">
+                        download
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {paymentHistory.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="py-8 text-center text-outline text-xs">
+                      Belum ada riwayat pembayaran.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -497,6 +513,160 @@ export default function TenantDetail({ tenant, onBack }) {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal - Edit Profil Perusahaan */}
+      {showEditProfileModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-on-surface/40 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border border-outline-variant text-left animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 bg-primary text-white flex justify-between items-center">
+              <h3 className="font-bold text-sm">Edit Profil Perusahaan / Tenant</h3>
+              <button onClick={() => setShowEditProfileModal(false)} className="text-white hover:bg-white/10 w-8 h-8 rounded-full flex items-center justify-center font-bold">
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleSaveProfile} className="p-6 space-y-4 text-xs font-bold text-on-surface-variant">
+              <div className="space-y-1">
+                <label className="block tracking-wider uppercase">Nama Tenant / Perusahaan</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary font-medium"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block tracking-wider uppercase">Lokasi Unit & Sektor</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block tracking-wider uppercase">Contact Person</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={contactPerson}
+                    onChange={(e) => setContactPerson(e.target.value)}
+                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary font-medium"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block tracking-wider uppercase">Jabatan / Role</label>
+                  <input 
+                    type="text" 
+                    value={contactRole}
+                    onChange={(e) => setContactRole(e.target.value)}
+                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="block tracking-wider uppercase">Email Contact</label>
+                  <input 
+                    type="email" 
+                    required 
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary font-medium"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block tracking-wider uppercase">No. Telepon / HP</label>
+                  <input 
+                    type="text" 
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
+                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-2 border-t border-outline-variant">
+                <button 
+                  type="button" 
+                  onClick={() => setShowEditProfileModal(false)}
+                  className="px-4 py-2 border border-outline-variant hover:bg-slate-50 transition-colors text-[11px] font-semibold rounded-lg cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 bg-primary hover:bg-[#001c59] text-white text-[11px] font-semibold rounded-lg cursor-pointer shadow"
+                >
+                  Simpan Perubahan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal - Kirim Pesan Ke Tenant */}
+      {showSendMessageModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-on-surface/40 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-outline-variant text-left animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 bg-primary text-white flex justify-between items-center">
+              <h3 className="font-bold text-sm">Kirim Pesan ke {companyName}</h3>
+              <button onClick={() => setShowSendMessageModal(false)} className="text-white hover:bg-white/10 w-8 h-8 rounded-full flex items-center justify-center font-bold">
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleSendMessage} className="p-6 space-y-4 text-xs font-bold text-on-surface-variant">
+              <div className="space-y-1">
+                <label className="block tracking-wider uppercase">Subjek Pesan / Pengumuman</label>
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="Contoh: Pemberitahuan Pemeliharaan AC Gedung"
+                  value={msgSubject}
+                  onChange={(e) => setMsgSubject(e.target.value)}
+                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary font-medium"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block tracking-wider uppercase">Isi Pesan</label>
+                <textarea 
+                  rows="4" 
+                  required 
+                  placeholder="Tuliskan isi pesan atau pemberitahuan resmi untuk tenant..."
+                  value={msgContent}
+                  onChange={(e) => setMsgContent(e.target.value)}
+                  className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-xs outline-none focus:ring-1 focus:ring-primary font-medium"
+                />
+              </div>
+
+              <div className="pt-4 flex justify-end gap-2 border-t border-outline-variant">
+                <button 
+                  type="button" 
+                  onClick={() => setShowSendMessageModal(false)}
+                  className="px-4 py-2 border border-outline-variant hover:bg-slate-50 transition-colors text-[11px] font-semibold rounded-lg cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit"
+                  className="px-4 py-2 bg-primary hover:bg-[#001c59] text-white text-[11px] font-semibold rounded-lg cursor-pointer shadow"
+                >
+                  Kirim Pesan
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
