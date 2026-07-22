@@ -14,7 +14,12 @@ import {
   CheckCircle2, 
   ExternalLink,
   Edit,
-  UserCheck
+  UserCheck,
+  Search,
+  FileSpreadsheet,
+  Printer,
+  Download,
+  Filter
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -56,6 +61,139 @@ export default function Settings({
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolderName, setCardHolderName] = useState('');
   const [cardAccessLevel, setCardAccessLevel] = useState('Staff');
+
+  // --- Search, Filter & Export States for Access Cards ---
+  const [cardSearchTerm, setCardSearchTerm] = useState('');
+  const [cardStatusFilter, setCardStatusFilter] = useState('All');
+  const [cardLevelFilter, setCardLevelFilter] = useState('All');
+
+  // Filtered Access Cards Computation
+  const filteredAccessCards = accessCards.filter(card => {
+    const tenant = tenants.find(t => t.id === card.tenantId);
+    const companyName = tenant ? tenant.company : '';
+    const searchLower = cardSearchTerm.toLowerCase();
+    
+    const matchesSearch = 
+      card.id.toLowerCase().includes(searchLower) ||
+      (card.cardNumber || '').toLowerCase().includes(searchLower) ||
+      (card.holderName || '').toLowerCase().includes(searchLower) ||
+      companyName.toLowerCase().includes(searchLower);
+
+    const matchesStatus = cardStatusFilter === 'All' || card.status === cardStatusFilter;
+    const matchesLevel = cardLevelFilter === 'All' || card.accessLevel === cardLevelFilter;
+
+    return matchesSearch && matchesStatus && matchesLevel;
+  });
+
+  // Export to Excel / CSV
+  const handleExportCardExcel = () => {
+    if (filteredAccessCards.length === 0) {
+      alert('Tidak ada data kartu akses untuk diexport!');
+      return;
+    }
+
+    const headers = ["Card ID", "Nomor Kartu", "Perusahaan", "Pemegang Kartu", "Level Akses", "Status"];
+    const rows = filteredAccessCards.map(c => {
+      const cardTenant = tenants.find(t => t.id === c.tenantId);
+      return [
+        `"${c.id}"`,
+        `"${c.cardNumber || ''}"`,
+        `"${cardTenant ? cardTenant.company : 'Unknown'}"`,
+        `"${c.holderName || ''}"`,
+        `"${c.accessLevel || ''}"`,
+        `"${c.status || ''}"`
+      ];
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Laporan_Kartu_Akses_GrahaKaji_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Export / Print PDF Report
+  const handleExportCardPDF = () => {
+    if (filteredAccessCards.length === 0) {
+      alert('Tidak ada data kartu akses untuk dicetak!');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank');
+    const tableRows = filteredAccessCards.map(c => {
+      const cardTenant = tenants.find(t => t.id === c.tenantId);
+      return `
+        <tr>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-family: monospace; font-size: 11px;">${c.id}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; font-family: monospace; color: #001c59;">${c.cardNumber}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold;">${cardTenant ? cardTenant.company : 'Unknown'}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${c.holderName}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${c.accessLevel}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
+            <span style="padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: bold; background-color: ${c.status === 'Suspended' ? '#fef2f2' : '#f0fdf4'}; color: ${c.status === 'Suspended' ? '#b91c1c' : '#15803d'}; border: 1px solid ${c.status === 'Suspended' ? '#fecaca' : '#bbf7d0'};">
+              ${c.status === 'Suspended' ? 'Ditangguhkan' : 'Aktif'}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Laporan Kartu Akses - Graha Kaji</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 32px; color: #0f172a; }
+            .header { border-bottom: 2px solid #001c59; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+            h2 { margin: 0; color: #001c59; font-size: 20px; font-weight: 800; }
+            .sub { font-size: 11px; color: #64748b; margin-top: 4px; font-weight: 600; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
+            th { background-color: #f8fafc; text-align: left; padding: 10px; border-bottom: 2px solid #cbd5e1; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; }
+            .footer { margin-top: 32px; font-size: 10px; color: #94a3b8; text-align: right; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h2>GRAHA KAJI BUILDING MANAGEMENT</h2>
+              <div class="sub">Laporan Resmi Direktori & Status Kartu Akses Gedung</div>
+            </div>
+            <div style="text-align: right;" class="sub">
+              <div>Tanggal Cetak: ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+              <div>Total Data: <strong>${filteredAccessCards.length} Kartu</strong></div>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>CARD ID</th>
+                <th>NOMOR KARTU</th>
+                <th>PERUSAHAAN</th>
+                <th>PEMEGANG KARTU</th>
+                <th>LEVEL AKSES</th>
+                <th>STATUS</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+          <div class="footer">Dicetak secara otomatis oleh Sistem Manajemen Gedung Graha Kaji.</div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => { printWindow.print(); }, 250);
+  };
 
   // --- Selected Space for mapping detail panel ---
   const [selectedSpaceId, setSelectedSpaceId] = useState(null);
@@ -1080,7 +1218,73 @@ export default function Settings({
             {/* Right: Active Cards Directory */}
             <div className="lg:col-span-2 bg-white rounded-2xl border border-outline-variant p-6 shadow-sm flex flex-col justify-between">
               <div>
-                <h3 className="text-base font-bold text-on-surface mb-4">{t('active_cards_title')}</h3>
+                {/* Header Row with Export Actions */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                  <h3 className="text-base font-bold text-on-surface">{t('active_cards_title')}</h3>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleExportCardExcel}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                      title="Export Data Kartu Akses ke Excel / CSV"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5" /> Export Excel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportCardPDF}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-[#001c59] text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                      title="Cetak / Save PDF Report Kartu Akses"
+                    >
+                      <Printer className="w-3.5 h-3.5" /> Cetak / PDF
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filter and Search Bar */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 p-3 bg-surface-container-low rounded-xl border border-outline-variant/60">
+                  {/* Search Input */}
+                  <div className="relative md:col-span-1">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+                    <input
+                      type="text"
+                      placeholder="Cari ID, No. Kartu, Nama..."
+                      value={cardSearchTerm}
+                      onChange={(e) => setCardSearchTerm(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 bg-white border border-outline-variant rounded-lg text-xs font-medium outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+
+                  {/* Status Filter */}
+                  <div>
+                    <select
+                      value={cardStatusFilter}
+                      onChange={(e) => setCardStatusFilter(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-white border border-outline-variant rounded-lg text-xs font-bold text-on-surface outline-none cursor-pointer"
+                    >
+                      <option value="All">Semua Status ({accessCards.length})</option>
+                      <option value="Active">Status: Aktif</option>
+                      <option value="Suspended">Status: Ditangguhkan</option>
+                    </select>
+                  </div>
+
+                  {/* Level Access Filter */}
+                  <div>
+                    <select
+                      value={cardLevelFilter}
+                      onChange={(e) => setCardLevelFilter(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-white border border-outline-variant rounded-lg text-xs font-bold text-on-surface outline-none cursor-pointer"
+                    >
+                      <option value="All">Semua Level Akses</option>
+                      <option value="Staff">Staff Access</option>
+                      <option value="Full Access">Full Access</option>
+                      <option value="VIP">VIP Access</option>
+                      <option value="Server Room">Server Room</option>
+                      <option value="MEP Area">MEP Area</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div className="overflow-x-auto custom-scrollbar">
                   <table className="w-full border-collapse">
                     <thead>
@@ -1095,7 +1299,7 @@ export default function Settings({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-outline-variant text-xs font-semibold text-on-surface">
-                      {accessCards.map(c => {
+                      {filteredAccessCards.map(c => {
                         const cardTenant = tenants.find(t => t.id === c.tenantId);
                         const isSuspended = c.status === 'Suspended';
                         return (
@@ -1150,10 +1354,10 @@ export default function Settings({
                           </tr>
                         );
                       })}
-                      {accessCards.length === 0 && (
+                      {filteredAccessCards.length === 0 && (
                         <tr>
                           <td colSpan="7" className="text-center py-8 text-outline">
-                            Belum ada kartu akses yang terdaftar.
+                            Tidak ada kartu akses yang sesuai dengan pencarian/filter.
                           </td>
                         </tr>
                       )}
