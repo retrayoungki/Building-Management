@@ -12,6 +12,7 @@ import Reports from './views/Reports';
 import Settings from './views/Settings';
 import TenantPortal from './views/TenantPortal';
 import Expenses from './views/Expenses';
+import Finance from './views/Finance';
 
 // ── Loading Screen ────────────────────────────────────────────
 function LoadingScreen() {
@@ -38,6 +39,50 @@ export default function App() {
   const [accessCards, setAccessCards] = useState([]);
   const [users, setUsers] = useState([]);
   const [visitors, setVisitors] = useState([]);
+  const [invoices, setInvoices] = useState([
+    {
+      id: 'INV-2026-001',
+      tenantId: 'TNT-101',
+      company: 'PT BlueTech Indonesia',
+      unit: 'Fl. 1 - 1B',
+      period: 'Juli 2026',
+      baseRent: 10833333,
+      serviceCharge: 1083333,
+      utilities: 1500000,
+      totalAmount: 13416666,
+      dueDate: '2026-07-28',
+      status: 'Paid',
+      createdDate: '2026-07-01'
+    },
+    {
+      id: 'INV-2026-002',
+      tenantId: 'TNT-102',
+      company: 'PT Nusantara Energi',
+      unit: 'Fl. 2 - 2A',
+      period: 'Juli 2026',
+      baseRent: 12500000,
+      serviceCharge: 1250000,
+      utilities: 1800000,
+      totalAmount: 15550000,
+      dueDate: '2026-07-25',
+      status: 'Unpaid',
+      createdDate: '2026-07-01'
+    },
+    {
+      id: 'INV-2026-003',
+      tenantId: 'TNT-103',
+      company: 'CV Sinar Abadi',
+      unit: 'Fl. 1 - 1C',
+      period: 'Juni 2026',
+      baseRent: 9500000,
+      serviceCharge: 950000,
+      utilities: 1200000,
+      totalAmount: 11650000,
+      dueDate: '2026-06-30',
+      status: 'Overdue',
+      createdDate: '2026-06-01'
+    }
+  ]);
 
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'HVAC Temp Spike Alert', message: 'Zone 5 temperature reached 27.2°C (Warning)', type: 'warning', time: '10 min ago', read: false },
@@ -67,7 +112,14 @@ export default function App() {
         supabase.from('visitors').select('*').order('created_at', { ascending: false }),
       ]);
 
-      if (tenantsData) setTenants(tenantsData);
+      if (tenantsData) {
+        setTenants(tenantsData.map(t => ({
+          ...t,
+          leaseStart: t.lease_start || t.leaseStart,
+          leaseEnd: t.lease_end || t.leaseEnd,
+          dueDate: t.due_date || t.dueDate,
+        })));
+      }
       if (ticketsData) setTickets(ticketsData.map(t => ({ ...t, timeText: t.time_text, sparepartNote: t.sparepart_note })));
       if (expensesData) setExpenses(expensesData);
       if (spacesData) setSpaces(spacesData.map(s => ({ ...s, tenantId: s.tenant_id })));
@@ -97,10 +149,26 @@ export default function App() {
     ]);
   };
 
-  // ── TENANTS CRUD ──────────────────────────────────────────
   const handleAddTenant = async (newTenant) => {
-    const { error } = await supabase.from('tenants').insert([newTenant]);
-    if (error) { console.error(error); return; }
+    const dbTenant = {
+      id: newTenant.id,
+      company: newTenant.company,
+      unit: newTenant.unit,
+      lease_start: newTenant.leaseStart || newTenant.lease_start,
+      lease_end: newTenant.leaseEnd || newTenant.lease_end,
+      due_date: newTenant.dueDate || newTenant.due_date || newTenant.leaseEnd,
+      rent: newTenant.rent,
+      status: newTenant.status || 'Active',
+      payment: newTenant.payment || 'Paid',
+      initials: newTenant.initials || 'TN',
+    };
+
+    const { error } = await supabase.from('tenants').insert([dbTenant]);
+    if (error) {
+      console.error('Error inserting tenant:', error);
+      alert('Gagal menyimpan data tenant ke database: ' + error.message);
+      return false;
+    }
 
     // Mendukung multiple unit: pisahkan unit dengan koma
     const units = newTenant.unit.split(',').map(u => u.trim());
@@ -115,12 +183,17 @@ export default function App() {
     );
 
     addNotification('New Tenant Registered', `${newTenant.company} registered for ${newTenant.unit}.`);
-    fetchAllData();
+    await fetchAllData();
+    return true;
   };
 
   const handleDeleteTenant = async (id) => {
     const { error } = await supabase.from('tenants').delete().eq('id', id);
-    if (error) { console.error(error); return; }
+    if (error) {
+      console.error('Error deleting tenant:', error);
+      alert('Gagal menghapus tenant dari database: ' + error.message);
+      return;
+    }
 
     // Bebaskan semua unit (spaces) yang memiliki tenant_id ini
     await supabase.from('spaces')
@@ -130,7 +203,7 @@ export default function App() {
     await supabase.from('access_cards').delete().eq('tenant_id', id);
     addNotification('Lease Cancelled', `Lease terminated for tenant.`, 'warning');
     
-    fetchAllData();
+    await fetchAllData();
   };
 
   // ── ACCESS CARDS CRUD ─────────────────────────────────────
@@ -278,6 +351,22 @@ export default function App() {
     return true;
   };
 
+  // ── INVOICES CRUD ─────────────────────────────────────────
+  const handleAddInvoice = (newInv) => {
+    setInvoices(prev => [newInv, ...prev]);
+    addNotification('Invoice Baru Diterbitkan', `Invoice ${newInv.id} diterbitkan untuk ${newInv.company}.`);
+  };
+
+  const handleUpdateInvoiceStatus = (id, newStatus) => {
+    setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, status: newStatus } : inv));
+    addNotification('Status Invoice Diperbarui', `Invoice ${id} telah ditandai ${newStatus}.`);
+  };
+
+  const handleDeleteInvoice = (id) => {
+    setInvoices(prev => prev.filter(inv => inv.id !== id));
+    addNotification('Invoice Dihapus', `Invoice ${id} telah dihapus.`, 'warning');
+  };
+
   // ── EXPENSES CRUD ─────────────────────────────────────────
   const handleAddExpense = async (newExp) => {
     const { error } = await supabase.from('expenses').insert([newExp]);
@@ -370,6 +459,19 @@ export default function App() {
         return <Certifications />;
       case 'security':
         return <SecurityCleaningSupervision />;
+      case 'finance':
+        return (
+          <Finance
+            tenants={tenants}
+            expenses={expenses}
+            invoices={invoices}
+            onAddInvoice={handleAddInvoice}
+            onUpdateInvoiceStatus={handleUpdateInvoiceStatus}
+            onDeleteInvoice={handleDeleteInvoice}
+            onAddExpense={handleAddExpense}
+            onDeleteExpense={handleDeleteExpense}
+          />
+        );
       case 'expenses':
         return (
           <Expenses

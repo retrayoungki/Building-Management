@@ -7,6 +7,7 @@ export default function Sidebar({ activeView, onViewChange, onLogout }) {
   const menuItems = [
     { id: 'dashboard', name: t('dashboard'), icon: 'dashboard' },
     { id: 'tenants', name: t('tenants'), icon: 'description' },
+    { id: 'finance', name: t('finance'), icon: 'account_balance_wallet' },
     { id: 'maintenance', name: t('maintenance'), icon: 'engineering' },
     { id: 'certifications', name: t('certifications'), icon: 'verified_user' },
     { id: 'security', name: t('security'), icon: 'security' },

@@ -17,59 +17,84 @@ export default function TenantManagement({ tenants, onAddTenant, onDeleteTenant,
   const [newLeaseEnd, setNewLeaseEnd] = useState('');
   const [newRent, setNewRent] = useState('');
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleOpenAddModal = () => {
     setSelectedUnits([]);
     setShowAddModal(true);
   };
 
-  const handleAddSubmit = (e) => {
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
     if (!newCompany || selectedUnits.length === 0 || !newLeaseStart || !newLeaseEnd) {
       alert('Mohon isi nama perusahaan, pilih minimal 1 unit, dan tentukan masa sewa!');
       return;
     }
 
-    const words = newCompany.split(' ');
-    const initials = words.length > 1 
-      ? (words[0].charAt(0) + words[1].charAt(0)).toUpperCase()
-      : newCompany.slice(0, 2).toUpperCase();
+    setIsSubmitting(true);
 
-    const jointUnits = selectedUnits.join(', ');
-    
-    // Hitung total sewa untuk unit-unit terpilih
-    const totalSelectedRent = selectedUnits.reduce((sum, unitName) => {
-      const sp = spaces.find(s => s.unit === unitName);
-      return sum + (sp ? sp.rent : 0);
-    }, 0);
+    try {
+      const words = newCompany.trim().split(/\s+/);
+      const initials = words.length > 1 
+        ? (words[0].charAt(0) + words[1].charAt(0)).toUpperCase()
+        : newCompany.slice(0, 2).toUpperCase();
 
-    const calculatedRent = parseInt(newRent) || totalSelectedRent || 150000000;
+      const jointUnits = selectedUnits.join(', ');
+      
+      const totalSelectedRent = selectedUnits.reduce((sum, unitName) => {
+        const sp = spaces ? spaces.find(s => s.unit === unitName) : null;
+        return sum + (sp ? sp.rent : 0);
+      }, 0);
 
-    const newTenant = {
-      id: 'TNT-' + Math.floor(1000 + Math.random() * 9000),
-      company: newCompany,
-      unit: jointUnits,
-      leaseStart: newLeaseStart,
-      leaseEnd: newLeaseEnd,
-      dueDate: new Date(newLeaseEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      rent: calculatedRent,
-      status: 'Active',
-      payment: 'Paid',
-      initials: initials
-    };
+      const calculatedRent = parseInt(newRent) || totalSelectedRent || 150000000;
 
-    onAddTenant(newTenant);
+      let formattedDueDate = newLeaseEnd;
+      try {
+        if (newLeaseEnd) {
+          const d = new Date(newLeaseEnd);
+          if (!isNaN(d.getTime())) {
+            formattedDueDate = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+          }
+        }
+      } catch (err) {
+        console.warn('Date parsing warning:', err);
+      }
 
-    setNewCompany('');
-    setSelectedUnits([]);
-    setNewLeaseStart('');
-    setNewLeaseEnd('');
-    setNewRent('');
-    setShowAddModal(false);
+      const newTenant = {
+        id: 'TNT-' + Math.floor(1000 + Math.random() * 9000),
+        company: newCompany,
+        unit: jointUnits,
+        leaseStart: newLeaseStart,
+        leaseEnd: newLeaseEnd,
+        dueDate: formattedDueDate,
+        rent: calculatedRent,
+        status: 'Active',
+        payment: 'Paid',
+        initials: initials
+      };
+
+      const success = await onAddTenant(newTenant);
+      if (success !== false) {
+        setNewCompany('');
+        setSelectedUnits([]);
+        setNewLeaseStart('');
+        setNewLeaseEnd('');
+        setNewRent('');
+        setShowAddModal(false);
+      }
+    } catch (err) {
+      console.error('Submit error:', err);
+      alert('Gagal menambahkan tenant: ' + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const filteredTenants = tenants.filter(t => {
-    return t.company.toLowerCase().includes(searchTerm.toLowerCase()) || 
-           t.unit.toLowerCase().includes(searchTerm.toLowerCase());
+    const comp = (t.company || '').toLowerCase();
+    const unt = (t.unit || '').toLowerCase();
+    const st = (searchTerm || '').toLowerCase();
+    return comp.includes(st) || unt.includes(st);
   });
 
   // Calculate statistics (base values matching the screenshot, offset by active array changes)
@@ -437,6 +462,7 @@ export default function TenantManagement({ tenants, onAddTenant, onDeleteTenant,
               <div className="pt-6 flex justify-end gap-4 border-t border-outline-variant px-8 py-6 bg-surface">
                 <button 
                   type="button"
+                  disabled={isSubmitting}
                   onClick={() => setShowAddModal(false)}
                   className="px-6 py-3 rounded-xl font-body-md text-on-surface-variant hover:bg-surface-container-high transition-colors font-bold text-xs"
                 >
@@ -444,9 +470,17 @@ export default function TenantManagement({ tenants, onAddTenant, onDeleteTenant,
                 </button>
                 <button 
                   type="submit"
-                  className="bg-primary text-on-primary px-8 py-3 rounded-xl font-body-md font-bold shadow-lg hover:shadow-xl hover:bg-[#001c59] transition-all text-white text-xs"
+                  disabled={isSubmitting}
+                  className="bg-primary disabled:opacity-50 text-on-primary px-8 py-3 rounded-xl font-body-md font-bold shadow-lg hover:shadow-xl hover:bg-[#001c59] transition-all text-white text-xs flex items-center gap-2 cursor-pointer"
                 >
-                  {t('simpan')}
+                  {isSubmitting ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      Menyimpan...
+                    </>
+                  ) : (
+                    t('simpan')
+                  )}
                 </button>
               </div>
             </form>

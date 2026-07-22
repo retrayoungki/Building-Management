@@ -225,21 +225,20 @@ export default function Settings({
   };
 
   // Handle Tenant Registration Form Submit
-  const handleTenantSubmit = (e) => {
+  const handleTenantSubmit = async (e) => {
     e.preventDefault();
     if (!newCompany || selectedUnits.length === 0 || !newLeaseStart || !newLeaseEnd) {
       alert('Mohon isi nama perusahaan, pilih minimal 1 unit, dan tentukan masa sewa!');
       return;
     }
 
-    const words = newCompany.split(' ');
+    const words = newCompany.trim().split(/\s+/);
     const initials = words.length > 1 
       ? (words[0].charAt(0) + words[1].charAt(0)).toUpperCase()
       : newCompany.slice(0, 2).toUpperCase();
 
     const jointUnits = selectedUnits.join(', ');
     
-    // Hitung total sewa untuk unit-unit terpilih jika tidak diinput manual
     const totalSelectedRent = selectedUnits.reduce((sum, unitName) => {
       const sp = spaces.find(s => s.unit === unitName);
       return sum + (sp ? sp.rent : 0);
@@ -247,28 +246,40 @@ export default function Settings({
 
     const calculatedRent = parseInt(newRent) || totalSelectedRent || 150000000;
 
+    let formattedDueDate = newLeaseEnd;
+    try {
+      if (newLeaseEnd) {
+        const d = new Date(newLeaseEnd);
+        if (!isNaN(d.getTime())) {
+          formattedDueDate = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+      }
+    } catch (err) {
+      console.warn('Date formatting warning:', err);
+    }
+
     const newTenant = {
       id: 'TNT-' + Math.floor(1000 + Math.random() * 9000),
       company: newCompany,
       unit: jointUnits,
       leaseStart: newLeaseStart,
       leaseEnd: newLeaseEnd,
-      dueDate: new Date(newLeaseEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      dueDate: formattedDueDate,
       rent: calculatedRent,
       status: 'Active',
       payment: 'Paid',
       initials: initials
     };
 
-    onAddTenant(newTenant);
-    alert(`Tenant ${newCompany} berhasil ditambahkan pada unit: ${jointUnits}`);
-
-    // Reset Form
-    setNewCompany('');
-    setSelectedUnits([]);
-    setNewLeaseStart('');
-    setNewLeaseEnd('');
-    setNewRent('');
+    const success = await onAddTenant(newTenant);
+    if (success !== false) {
+      alert(`Tenant ${newCompany} berhasil ditambahkan pada unit: ${jointUnits}`);
+      setNewCompany('');
+      setSelectedUnits([]);
+      setNewLeaseStart('');
+      setNewLeaseEnd('');
+      setNewRent('');
+    }
   };
 
   // Handle Assigning Access Card Submit
