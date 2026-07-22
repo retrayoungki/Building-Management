@@ -694,9 +694,13 @@ export default function Settings({
                     <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider">{t('floor_map_title')}</h3>
                     <p className="text-[11px] text-on-surface-variant font-semibold mt-0.5">Klik unit pada denah gedung untuk melihat detail & menyewa.</p>
                   </div>
-                  <div className="flex items-center gap-3 text-[10px] font-bold">
-                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-500"></span> {t('available_status')}</span>
-                    <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-primary"></span> {t('occupied_status')}</span>
+                  <div className="flex items-center gap-3 text-[11px] font-extrabold">
+                    <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-900 rounded-full border border-emerald-400 shadow-sm">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-300"></span> {t('available_status')}
+                    </span>
+                    <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-900 text-white rounded-full border border-slate-700 shadow-sm">
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-400 ring-2 ring-blue-500/50"></span> {t('occupied_status')}
+                    </span>
                   </div>
                 </div>
 
@@ -727,32 +731,45 @@ export default function Settings({
                                 id={`map-unit-${sp.id}`}
                                 onClick={() => {
                                   setSelectedSpaceId(sp.id);
-                                  // Scroll to the matching row in the inventory table
                                   setTimeout(() => {
                                     document.getElementById(`row-${sp.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                   }, 100);
                                 }}
-                                className={`p-3 rounded-lg border text-left flex flex-col justify-between transition-all relative select-none cursor-pointer outline-none focus:outline-none ${
+                                className={`p-3.5 rounded-xl border-2 text-left flex flex-col justify-between transition-all relative select-none cursor-pointer outline-none focus:outline-none ${
                                   isSelected 
-                                    ? 'ring-2 ring-primary border-primary scale-[1.02] shadow' 
+                                    ? 'ring-4 ring-primary/40 scale-[1.03] shadow-lg z-10' 
                                     : ''
                                 } ${
                                   isOccupied 
-                                    ? 'bg-blue-50/20 border-primary-container/50 hover:bg-blue-50/40 text-primary' 
-                                    : 'bg-green-50/20 border-green-200 hover:bg-green-50/40 text-green-700'
+                                    ? 'bg-slate-900 border-slate-700 text-white hover:bg-slate-800 shadow-md' 
+                                    : 'bg-emerald-50 border-emerald-500 text-emerald-950 hover:bg-emerald-100 hover:border-emerald-600 shadow-sm'
                                 }`}
                               >
                                 <div>
-                                  <div className="flex justify-between items-center font-extrabold text-[11px] mb-1">
-                                    <span>{sp.unit.split(' - ')[1]}</span>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${isOccupied ? 'bg-primary' : 'bg-green-500'}`}></span>
+                                  <div className="flex justify-between items-center font-black text-xs mb-1">
+                                    <span className={isOccupied ? 'text-white' : 'text-emerald-950 font-black'}>
+                                      {sp.unit.split(' - ')[1]}
+                                    </span>
+                                    <span className={`w-2.5 h-2.5 rounded-full ${
+                                      isOccupied 
+                                        ? 'bg-blue-400 ring-2 ring-blue-500/50' 
+                                        : 'bg-emerald-500 ring-2 ring-emerald-300 animate-pulse'
+                                    }`}></span>
                                   </div>
-                                  <p className="text-[10px] font-semibold text-on-surface-variant">{sp.wing}</p>
+                                  <p className={`text-[10px] font-bold ${isOccupied ? 'text-slate-300' : 'text-emerald-800'}`}>
+                                    {sp.wing}
+                                  </p>
                                 </div>
-                                <div className="mt-3 flex justify-between items-end border-t border-outline-variant/30 pt-1.5 text-[9px] font-bold text-on-surface-variant">
+                                <div className={`mt-3 flex justify-between items-end border-t pt-2 text-[9px] font-bold ${
+                                  isOccupied ? 'border-slate-700/80 text-slate-300' : 'border-emerald-200 text-emerald-900'
+                                }`}>
                                   <span>{sp.area} m²</span>
-                                  <span className="truncate max-w-[70px] text-right font-extrabold text-on-surface">
-                                    {isOccupied ? (matchTenant ? matchTenant.initials : 'Occupied') : 'Available'}
+                                  <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider ${
+                                    isOccupied 
+                                      ? 'bg-blue-600 text-white shadow-xs' 
+                                      : 'bg-emerald-600 text-white shadow-xs'
+                                  }`}>
+                                    {isOccupied ? (matchTenant ? matchTenant.initials : 'Terisi') : 'Tersedia'}
                                   </span>
                                 </div>
                               </button>
