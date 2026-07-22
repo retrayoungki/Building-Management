@@ -123,7 +123,7 @@ export default function App() {
       if (ticketsData) setTickets(ticketsData.map(t => ({ ...t, timeText: t.time_text, sparepartNote: t.sparepart_note })));
       if (expensesData) setExpenses(expensesData);
       if (spacesData) setSpaces(spacesData.map(s => ({ ...s, tenantId: s.tenant_id })));
-      if (cardsData) setAccessCards(cardsData.map(c => ({ ...c, cardNumber: c.card_number, tenantId: c.tenant_id, holderName: c.holder_name, assignedDate: c.assigned_date, accessLevel: c.access_level })));
+      if (cardsData) setAccessCards(cardsData.map(c => ({ ...c, cardNumber: c.card_number, tenantId: c.tenant_id, holderName: c.holder_name, assignedDate: c.assigned_date, accessLevel: c.access_level, jabatan: c.jabatan || '', pintu: c.pintu || '', company: c.company || '' })));
       if (usersData) setUsers(usersData);
       if (visitorsData) setVisitors(visitorsData.map(v => ({ ...v, checkIn: v.check_in, checkOut: v.check_out })));
     } catch (err) {
@@ -212,7 +212,10 @@ export default function App() {
       id: newCard.id,
       card_number: newCard.cardNumber,
       tenant_id: newCard.tenantId,
+      company: newCard.company || '',
       holder_name: newCard.holderName,
+      jabatan: newCard.jabatan || '',
+      pintu: newCard.pintu || '',
       status: newCard.status,
       assigned_date: newCard.assignedDate,
       access_level: newCard.accessLevel,

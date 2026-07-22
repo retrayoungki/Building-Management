@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Calendar, Trash2, Plus, Filter, Download, ChevronLeft, ChevronRight, X, UploadCloud } from 'lucide-react';
 import TenantDetail from './TenantDetail';
 import { useLanguage } from '../context/LanguageContext';
+import ExportToolbar from '../components/ExportToolbar';
 
 export default function TenantManagement({ tenants, onAddTenant, onDeleteTenant, searchTerm, spaces }) {
   const { t } = useLanguage();
@@ -202,20 +203,28 @@ export default function TenantManagement({ tenants, onAddTenant, onDeleteTenant,
             </span>
           </div>
 
-          <div className="flex gap-2">
-            <button className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-semibold flex items-center gap-2 hover:bg-surface-container transition-colors">
-              <span className="material-symbols-outlined text-sm" data-icon="filter_list">
-                filter_list
-              </span>
-              {t('filter')}
-            </button>
-            <button className="px-4 py-2 border border-outline-variant rounded-lg text-xs font-semibold flex items-center gap-2 hover:bg-surface-container transition-colors">
-              <span className="material-symbols-outlined text-sm" data-icon="download">
-                download
-              </span>
-              {t('export')}
-            </button>
-          </div>
+          <ExportToolbar
+            title="Manajemen Tenant"
+            subtitle="Data tenant aktif - Graha Kaji Building Management"
+            filename="manajemen_tenant"
+            data={filteredTenants}
+            columns={[
+              { key: 'unit', label: 'Unit' },
+              { key: 'company', label: 'Perusahaan' },
+              { key: 'status', label: 'Status Kontrak' },
+              { key: 'leaseStart', label: 'Mulai Sewa' },
+              { key: 'leaseEnd', label: 'Akhir Sewa' },
+              { key: 'rent', label: 'Nilai Sewa', render: r => r.rent ? `Rp ${Number(r.rent).toLocaleString('id-ID')}` : '-' },
+              { key: 'payment', label: 'Status Pembayaran' },
+              { key: 'dueDate', label: 'Jatuh Tempo' },
+            ]}
+            summaryCards={[
+              { label: 'Total Tenant', value: currentTotal },
+              { label: 'Kontrak Aktif', value: currentActive },
+              { label: 'Akan Berakhir', value: currentEnding },
+              { label: 'Terlambat Bayar', value: currentLate },
+            ]}
+          />
         </div>
 
         {/* Table List */}

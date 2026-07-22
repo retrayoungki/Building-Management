@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Search, Calendar, User, CheckCircle2, Clock, AlertCircle, HelpCircle, ChevronLeft, ChevronRight, Download, Filter, Eye, Edit2, Play, Check, MapPin, Archive } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import ExportToolbar from '../components/ExportToolbar';
 
 export default function MaintenanceTickets({ tickets, onAddTicket, onUpdateTicketStatus, onAssignTechnician }) {
   const { t, lang } = useLanguage();
@@ -197,6 +198,38 @@ export default function MaintenanceTickets({ tickets, onAddTicket, onUpdateTicke
             </button>
           </div>
         </div>
+        <ExportToolbar
+          title="Work Order & Maintenance"
+          subtitle={viewMode === 'board' ? 'Data tiket work order pemeliharaan gedung' : 'Jadwal Preventive Maintenance'}
+          filename={viewMode === 'board' ? 'work_order_tickets' : 'jadwal_pm'}
+          data={viewMode === 'board' ? filteredTickets : pmTasks}
+          columns={viewMode === 'board' ? [
+            { key: 'id', label: 'No. WO' },
+            { key: 'title', label: 'Judul Pekerjaan' },
+            { key: 'category', label: 'Kategori' },
+            { key: 'priority', label: 'Prioritas' },
+            { key: 'status', label: 'Status' },
+            { key: 'location', label: 'Lokasi' },
+            { key: 'reporter', label: 'Pelapor' },
+            { key: 'assignee', label: 'Teknisi' },
+            { key: 'date', label: 'Tanggal' },
+          ] : [
+            { key: 'typeName', label: 'Aset' },
+            { key: 'title', label: 'Pekerjaan PM' },
+            { key: 'time', label: 'Waktu' },
+            { key: 'technician', label: 'Teknisi/Vendor' },
+            { key: 'completed', label: 'Status', render: r => r.completed ? 'Selesai' : 'Belum Selesai' },
+          ]}
+          summaryCards={viewMode === 'board' ? [
+            { label: 'Total Work Order', value: filteredTickets.length },
+            { label: 'Baru', value: filteredTickets.filter(t=>t.status==='New').length },
+            { label: 'Dikerjakan', value: filteredTickets.filter(t=>t.status==='In Progress').length },
+            { label: 'Selesai', value: filteredTickets.filter(t=>t.status==='Resolved').length },
+          ] : [
+            { label: 'Total PM Tasks', value: pmTasks.length },
+            { label: 'Selesai', value: pmTasks.filter(t=>t.completed).length },
+          ]}
+        />
       </div>
 
       {viewMode === 'board' ? (

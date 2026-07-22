@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Shield, Eye, UserCheck, UserX, FileText, QrCode, Play, AlertCircle } from 'lucide-react';
+import ExportToolbar from '../components/ExportToolbar';
 
 export default function SecurityVisitors({ visitors, onCheckInVisitor, onCheckOutVisitor, onAddVisitor }) {
   const [showQRModal, setShowQRModal] = useState(false);
@@ -208,8 +209,34 @@ export default function SecurityVisitors({ visitors, onCheckInVisitor, onCheckOu
 
       {/* Visitor Check-in Log Table Card */}
       <div className="bg-white rounded-2xl border border-outline-variant p-5 text-left shadow-sm">
-        <h3 className="text-base font-bold text-primary mb-1">Visitor Operations Desk</h3>
-        <p className="text-xs text-on-surface-variant mb-6">Real-time visitor logs and check-in desk</p>
+        <div className="flex justify-between items-center mb-1">
+          <div>
+            <h3 className="text-base font-bold text-primary">Visitor Operations Desk</h3>
+            <p className="text-xs text-on-surface-variant mt-0.5">Real-time visitor logs and check-in desk</p>
+          </div>
+          <ExportToolbar
+            title="Log Pengunjung Gedung"
+            subtitle="Catatan kunjungan harian - Graha Kaji Building Management"
+            filename="log_pengunjung"
+            data={visitors || []}
+            columns={[
+              { key: 'id', label: 'Pass ID' },
+              { key: 'name', label: 'Nama Pengunjung' },
+              { key: 'host', label: 'Host / Perusahaan' },
+              { key: 'purpose', label: 'Tujuan Kunjungan' },
+              { key: 'checkIn', label: 'Check In' },
+              { key: 'checkOut', label: 'Check Out' },
+              { key: 'status', label: 'Status' },
+              { key: 'date', label: 'Tanggal' },
+            ]}
+            summaryCards={[
+              { label: 'Total Pengunjung', value: (visitors || []).length },
+              { label: 'Checked In', value: (visitors || []).filter(v=>v.status==='Checked In').length },
+              { label: 'Expected', value: (visitors || []).filter(v=>v.status==='Expected').length },
+            ]}
+          />
+        </div>
+        <p className="mb-6"></p>
 
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">

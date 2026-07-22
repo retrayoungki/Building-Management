@@ -13,6 +13,7 @@ import {
   TrendingUp,
   Percent
 } from 'lucide-react';
+import ExportToolbar from '../components/ExportToolbar';
 
 export default function Expenses({ expenseData, onAddExpense, onDeleteExpense }) {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -87,12 +88,32 @@ export default function Expenses({ expenseData, onAddExpense, onDeleteExpense })
           <h2 className="text-2xl font-bold text-primary">Biaya & Utilitas Gedung</h2>
           <p className="text-sm text-on-surface-variant mt-0.5">Catat, kelola, dan visualisasikan pengeluaran operasional Graha Kaji.</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-1.5 px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-lg shadow-md hover:brightness-110 active:scale-95 transition-all"
-        >
-          <Plus className="w-4 h-4" /> Catat Pengeluaran Baru
-        </button>
+        <div className="flex items-center gap-2">
+          <ExportToolbar
+            title="Biaya & Utilitas Gedung"
+            subtitle="Data pengeluaran operasional - Graha Kaji Building Management"
+            filename="biaya_utilitas_gedung"
+            data={filteredExpenses}
+            columns={[
+              { key: 'category', label: 'Kategori' },
+              { key: 'description', label: 'Keterangan' },
+              { key: 'amount', label: 'Jumlah', render: r => `Rp ${Number(r.amount).toLocaleString('id-ID')}` },
+              { key: 'date', label: 'Tanggal' },
+              { key: 'type', label: 'Jenis' },
+            ]}
+            summaryCards={[
+              { label: 'Total Pengeluaran', value: `Rp ${totalExpenses.toLocaleString('id-ID')}` },
+              { label: 'Area Publik', value: `Rp ${publicAreaTotal.toLocaleString('id-ID')}` },
+              { label: 'Dibebankan Tenant', value: `Rp ${privateAreaTotal.toLocaleString('id-ID')}` },
+            ]}
+          />
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-lg shadow-md hover:brightness-110 active:scale-95 transition-all"
+          >
+            <Plus className="w-4 h-4" /> Catat Pengeluaran Baru
+          </button>
+        </div>
       </div>
 
       {/* Stats row */}

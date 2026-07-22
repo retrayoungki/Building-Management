@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { Plus, Search, Download, Filter, FileText, ChevronLeft, ChevronRight, AlertTriangle, ShieldCheck, HelpCircle } from 'lucide-react';
+import ExportToolbar from '../components/ExportToolbar';
 
 export default function Certifications() {
   const { t, lang } = useLanguage();
@@ -79,13 +80,34 @@ export default function Certifications() {
           </p>
         </div>
         
-        <button 
-          onClick={() => setShowUploadModal(true)}
-          className="flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-lg text-xs font-bold shadow-sm hover:brightness-110 active:scale-95 transition-all outline-none focus:outline-none"
-        >
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          {lang === 'id' ? 'Tambah Dokumen' : 'Add Document'}
-        </button>
+        <div className="flex items-center gap-2">
+          <ExportToolbar
+            title="Sertifikasi & Perizinan"
+            subtitle="Daftar perizinan dan sertifikasi teknis gedung Graha Kaji"
+            filename="sertifikasi_perizinan"
+            data={filteredDocs}
+            columns={[
+              { key: 'name', label: 'Nama Dokumen' },
+              { key: 'code', label: 'Nomor Dokumen' },
+              { key: 'issueDate', label: 'Tanggal Terbit' },
+              { key: 'expiryDate', label: 'Tanggal Kadaluarsa' },
+              { key: 'status', label: 'Status' },
+            ]}
+            summaryCards={[
+              { label: 'Total Dokumen', value: filteredDocs.length },
+              { label: 'Aktif', value: filteredDocs.filter(d=>d.status==='Active').length },
+              { label: 'Akan Kadaluarsa', value: filteredDocs.filter(d=>d.status==='Expiring Soon').length },
+              { label: 'Kadaluarsa', value: filteredDocs.filter(d=>d.status==='Expired').length },
+            ]}
+          />
+          <button 
+            onClick={() => setShowUploadModal(true)}
+            className="flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-lg text-xs font-bold shadow-sm hover:brightness-110 active:scale-95 transition-all outline-none focus:outline-none"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            {lang === 'id' ? 'Tambah Dokumen' : 'Add Document'}
+          </button>
+        </div>
       </div>
 
       {/* Visual Progress Bar Section (Bento Grid Style) */}

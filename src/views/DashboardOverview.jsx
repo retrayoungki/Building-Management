@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import ExportToolbar from '../components/ExportToolbar';
 
 export default function DashboardOverview({ onViewChange, tickets, tenants }) {
   const { t } = useLanguage();
@@ -16,6 +17,35 @@ export default function DashboardOverview({ onViewChange, tickets, tenants }) {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Dashboard Header with Export */}
+      <div className="flex justify-between items-center">
+        <div className="text-left">
+          <h2 className="text-2xl font-bold text-primary">{t('dashboard')}</h2>
+          <p className="text-xs text-on-surface-variant font-medium mt-0.5">Overview performa operasional gedung Graha Kaji</p>
+        </div>
+        <ExportToolbar
+          title="Dashboard Overview - Graha Kaji"
+          subtitle="Ringkasan KPI & performa operasional gedung"
+          filename="dashboard_overview"
+          data={[
+            ...(tenants || []).map(t => ({ tipe: 'Tenant', nama: t.company, unit: t.unit, status: t.status, pembayaran: t.payment })),
+            ...(tickets || []).filter(t => t.status !== 'Resolved').map(t => ({ tipe: 'Work Order', nama: t.title, unit: t.location, status: t.status, pembayaran: t.priority }))
+          ]}
+          columns={[
+            { key: 'tipe', label: 'Tipe' },
+            { key: 'nama', label: 'Nama / Judul' },
+            { key: 'unit', label: 'Unit / Lokasi' },
+            { key: 'status', label: 'Status' },
+            { key: 'pembayaran', label: 'Pembayaran / Prioritas' },
+          ]}
+          summaryCards={[
+            { label: 'Total Tenant', value: (tenants || []).length },
+            { label: 'Tenant Aktif', value: (tenants || []).filter(t=>t.status==='Active').length },
+            { label: 'Work Order Aktif', value: (tickets || []).filter(t=>t.status!=='Resolved').length },
+          ]}
+        />
+      </div>
+
       {/* KPI Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
         {/* Occupancy Rate */}

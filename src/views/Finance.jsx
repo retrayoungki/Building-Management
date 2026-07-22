@@ -28,6 +28,7 @@ import {
   X
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import ExportToolbar from '../components/ExportToolbar';
 
 export default function Finance({
   tenants = [],
@@ -209,6 +210,35 @@ export default function Finance({
             Kelola seluruh ekosistem keuangan gedung: penagihan sewa, invoice tenant, costing operasional, dan laporan laba bersih.
           </p>
         </div>
+        <ExportToolbar
+          title="Manajemen Keuangan"
+          subtitle={activeTab === 'invoicing' ? 'Laporan Invoice & Penagihan Sewa Tenant' : activeTab === 'costing' ? 'Laporan Biaya Operasional (Costing)' : 'Laporan Arus Kas & Laba Operasional'}
+          filename={activeTab === 'invoicing' ? 'laporan_invoice_sewa' : activeTab === 'costing' ? 'laporan_costing' : 'laporan_arus_kas'}
+          data={activeTab === 'invoicing' ? invoices : expenses}
+          columns={activeTab === 'invoicing' ? [
+            { key: 'id', label: 'No. Invoice' },
+            { key: 'company', label: 'Perusahaan' },
+            { key: 'unit', label: 'Unit' },
+            { key: 'period', label: 'Periode' },
+            { key: 'totalAmount', label: 'Total Tagihan', render: r => `Rp ${Number(r.totalAmount).toLocaleString('id-ID')}` },
+            { key: 'dueDate', label: 'Jatuh Tempo' },
+            { key: 'status', label: 'Status' },
+          ] : [
+            { key: 'title', label: 'Keterangan' },
+            { key: 'category', label: 'Kategori' },
+            { key: 'amount', label: 'Jumlah', render: r => `Rp ${Number(r.amount).toLocaleString('id-ID')}` },
+            { key: 'date', label: 'Tanggal' },
+            { key: 'scope', label: 'Jenis' },
+          ]}
+          summaryCards={activeTab === 'invoicing' ? [
+            { label: 'Total Invoice', value: invoices.length },
+            { label: 'Paid', value: invoices.filter(i=>i.status==='Paid').length },
+            { label: 'Unpaid', value: invoices.filter(i=>i.status==='Unpaid').length },
+            { label: 'Overdue', value: invoices.filter(i=>i.status==='Overdue').length },
+          ] : [
+            { label: 'Total Pengeluaran', value: `Rp ${expenses.reduce((s,e)=>s+(e.amount||0),0).toLocaleString('id-ID')}` },
+          ]}
+        />
       </div>
 
       {/* Top KPI Cards */}

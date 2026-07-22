@@ -7,6 +7,7 @@ import {
   TrendingDown, BarChart3, PieChart, Zap, Droplet,
   Shield, FileText, Users
 } from 'lucide-react';
+import ExportToolbar from '../components/ExportToolbar';
 
 const months = [
   'Januari 2024', 'Februari 2024', 'Maret 2024', 'April 2024',
@@ -201,14 +202,26 @@ export default function Reports({ currentUser, expenses = [] }) {
           <h2 className="text-2xl font-bold text-primary leading-tight">Laporan Bulanan</h2>
           <p className="text-sm text-on-surface-variant mt-0.5">Kelola dan tinjau performa operasional properti Anda.</p>
         </div>
-        <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-outline text-secondary text-xs font-bold rounded-lg hover:bg-surface-container transition-all active:scale-95 shadow-sm">
-            <Share2 className="w-4 h-4" /> Bagikan
-          </button>
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-xs font-bold rounded-lg hover:brightness-110 transition-all active:scale-95 shadow-md">
-            <Plus className="w-4 h-4" /> Laporan Baru
-          </button>
-        </div>
+        <ExportToolbar
+          title={`Laporan Bulanan - ${selectedMonth}`}
+          subtitle={`Laporan keuangan & operasional Graha Kaji — ${selectedMonth}`}
+          filename={`laporan_bulanan_${selectedMonth.replace(' ', '_')}`}
+          data={[
+            ...incomeData.map(d => ({ ...d, tipe: 'Pendapatan' })),
+            ...expenses.map(e => ({ ...e, tipe: 'Pengeluaran', desc: e.title, cat: e.category, amount: e.amount }))
+          ]}
+          columns={[
+            { key: 'tipe', label: 'Tipe' },
+            { key: 'desc', label: 'Keterangan' },
+            { key: 'cat', label: 'Kategori' },
+            { key: 'amount', label: 'Jumlah', render: r => `Rp ${Number(r.amount).toLocaleString('id-ID')}` },
+          ]}
+          summaryCards={[
+            { label: 'Total Pendapatan', value: `Rp ${totalIncome.toLocaleString('id-ID')}` },
+            { label: 'Total Pengeluaran', value: `Rp ${totalExpenses.toLocaleString('id-ID')}` },
+            { label: 'Net Income', value: `Rp ${netIncome.toLocaleString('id-ID')}` },
+          ]}
+        />
       </div>
 
       {/* ── Quick Stats Bar ── */}

@@ -22,6 +22,7 @@ import {
   Filter
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import ExportToolbar from '../components/ExportToolbar';
 
 export default function Settings({ 
   tenants = [], 
@@ -60,7 +61,9 @@ export default function Settings({
   const [cardTenantId, setCardTenantId] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolderName, setCardHolderName] = useState('');
-  const [cardAccessLevel, setCardAccessLevel] = useState('Staff');
+  const [cardJabatan, setCardJabatan] = useState('');
+  const [cardPintu, setCardPintu] = useState('B/G/3');
+  const [cardAccessLevel, setCardAccessLevel] = useState('Full Access');
 
   // --- Search, Filter & Export States for Access Cards ---
   const [cardSearchTerm, setCardSearchTerm] = useState('');
@@ -425,11 +428,15 @@ export default function Settings({
     e.preventDefault();
     if (!cardTenantId || !cardNumber || !cardHolderName) return;
 
+    const tenant = tenants.find(t => t.id === cardTenantId);
     const newCard = {
       id: 'CARD-' + Math.floor(1000 + Math.random() * 9000),
       cardNumber: cardNumber,
       tenantId: cardTenantId,
+      company: tenant ? tenant.company : '',
       holderName: cardHolderName,
+      jabatan: cardJabatan,
+      pintu: cardPintu,
       status: 'Active',
       assignedDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
       accessLevel: cardAccessLevel
@@ -441,7 +448,9 @@ export default function Settings({
     // Reset Form
     setCardNumber('');
     setCardHolderName('');
-    setCardAccessLevel('Staff');
+    setCardJabatan('');
+    setCardPintu('B/G/3');
+    setCardAccessLevel('Full Access');
   };
 
   // Switch to Tenant Registration and auto-select unit from map
@@ -482,6 +491,50 @@ export default function Settings({
           </nav>
           <h2 className="font-display text-display text-on-surface text-3xl font-extrabold">{t('settings')}</h2>
         </div>
+        {(activeTab === 'tenants' || activeTab === 'spaces' || activeTab === 'cards') && (
+          <ExportToolbar
+            title={activeTab === 'tenants' ? 'Data Tenant Gedung' : activeTab === 'spaces' ? 'Data Ruang & Unit' : 'Data Kartu Akses'}
+            subtitle={activeTab === 'tenants' ? 'Daftar tenant terdaftar - Graha Kaji' : activeTab === 'spaces' ? 'Inventaris unit dan ruang gedung' : 'Database kartu akses gedung'}
+            filename={activeTab === 'tenants' ? 'data_tenant' : activeTab === 'spaces' ? 'data_ruang_unit' : 'data_kartu_akses'}
+            data={activeTab === 'tenants' ? tenants : activeTab === 'spaces' ? spaces : accessCards}
+            columns={activeTab === 'tenants' ? [
+              { key: 'company', label: 'Perusahaan' },
+              { key: 'unit', label: 'Unit' },
+              { key: 'status', label: 'Status' },
+              { key: 'leaseStart', label: 'Mulai Sewa' },
+              { key: 'leaseEnd', label: 'Akhir Sewa' },
+              { key: 'rent', label: 'Nilai Sewa', render: r => `Rp ${Number(r.rent||0).toLocaleString('id-ID')}` },
+              { key: 'payment', label: 'Status Bayar' },
+            ] : activeTab === 'spaces' ? [
+              { key: 'unit', label: 'Unit' },
+              { key: 'floor', label: 'Lantai' },
+              { key: 'area', label: 'Luas (m²)' },
+              { key: 'status', label: 'Status' },
+              { key: 'rent', label: 'Harga Sewa', render: r => r.rent ? `Rp ${Number(r.rent).toLocaleString('id-ID')}` : '-' },
+              { key: 'tenant', label: 'Penyewa' },
+            ] : [
+              { key: 'card_number', label: 'No. Kartu' },
+              { key: 'holder_name', label: 'Nama Pemegang' },
+              { key: 'jabatan', label: 'Jabatan' },
+              { key: 'access_level', label: 'Level Akses' },
+              { key: 'pintu', label: 'Pintu Akses' },
+              { key: 'status', label: 'Status' },
+              { key: 'assigned_date', label: 'Tgl Diterima' },
+            ]}
+            summaryCards={activeTab === 'tenants' ? [
+              { label: 'Total Tenant', value: tenants.length },
+              { label: 'Aktif', value: tenants.filter(t=>t.status==='Active').length },
+            ] : activeTab === 'spaces' ? [
+              { label: 'Total Unit', value: spaces.length },
+              { label: 'Tersewa', value: spaces.filter(s=>s.status==='Occupied').length },
+              { label: 'Tersedia', value: spaces.filter(s=>s.status==='Available').length },
+            ] : [
+              { label: 'Total Kartu', value: accessCards.length },
+              { label: 'Aktif', value: accessCards.filter(c=>c.status==='Active').length },
+              { label: 'Suspended', value: accessCards.filter(c=>c.status==='Suspended').length },
+            ]}
+          />
+        )}
       </div>
 
       {/* Tab Selectors */}
@@ -1156,7 +1209,7 @@ export default function Settings({
                     onChange={(e) => setCardTenantId(e.target.value)}
                     className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg outline-none focus:ring-1 focus:ring-primary font-medium text-on-surface"
                   >
-                    <option value="">-- Pilih Tenant --</option>
+                    <option value="">-- Pilih Tenant / Perusahaan --</option>
                     {tenants.map(t => (
                       <option key={t.id} value={t.id}>{t.company} ({t.unit})</option>
                     ))}
@@ -1168,9 +1221,20 @@ export default function Settings({
                   <input 
                     type="text" 
                     required 
-                    placeholder="Contoh: Andi Pratama"
+                    placeholder="Contoh: Petrus Bernadus"
                     value={cardHolderName}
                     onChange={(e) => setCardHolderName(e.target.value)}
+                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg outline-none focus:ring-1 focus:ring-primary font-medium"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-outline uppercase tracking-wider block">Jabatan / Posisi</label>
+                  <input 
+                    type="text" 
+                    placeholder="Contoh: Direktur Utama, HRD, Staff"
+                    value={cardJabatan}
+                    onChange={(e) => setCardJabatan(e.target.value)}
                     className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg outline-none focus:ring-1 focus:ring-primary font-medium"
                   />
                 </div>
@@ -1180,27 +1244,47 @@ export default function Settings({
                   <input 
                     type="text" 
                     required 
-                    placeholder="Contoh: 102938475"
+                    placeholder="Contoh: 12561"
                     value={cardNumber}
                     onChange={(e) => setCardNumber(e.target.value)}
                     className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg outline-none focus:ring-1 focus:ring-primary font-medium"
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-outline uppercase tracking-wider block">{t('access_level')}</label>
-                  <select 
-                    required
-                    value={cardAccessLevel}
-                    onChange={(e) => setCardAccessLevel(e.target.value)}
-                    className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg outline-none focus:ring-1 focus:ring-primary font-medium text-on-surface"
-                  >
-                    <option value="Staff">Staff Access</option>
-                    <option value="Full Access">Full Access</option>
-                    <option value="VIP">VIP Access</option>
-                    <option value="Server Room">Server Room Access</option>
-                    <option value="MEP Area">MEP Area Access</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-outline uppercase tracking-wider block">Pintu Akses</label>
+                    <select 
+                      value={cardPintu}
+                      onChange={(e) => setCardPintu(e.target.value)}
+                      className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg outline-none focus:ring-1 focus:ring-primary font-medium text-on-surface"
+                    >
+                      <option value="B/G/3">B/G/3</option>
+                      <option value="B/G">B/G</option>
+                      <option value="B/G/3/R. Pak Petrus">B/G/3/R. Pak Petrus</option>
+                      <option value="Full Access">Full Access</option>
+                      <option value="B">B (Basement)</option>
+                      <option value="G">G (Ground)</option>
+                      <option value="Lantai 3">Lantai 3</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-outline uppercase tracking-wider block">{t('access_level')}</label>
+                    <select 
+                      required
+                      value={cardAccessLevel}
+                      onChange={(e) => setCardAccessLevel(e.target.value)}
+                      className="w-full px-3 py-2 bg-surface-container-low border border-outline-variant rounded-lg outline-none focus:ring-1 focus:ring-primary font-medium text-on-surface"
+                    >
+                      <option value="Full Access">Full Access</option>
+                      <option value="B/G/3">B/G/3</option>
+                      <option value="B/G">B/G</option>
+                      <option value="VIP">VIP Access</option>
+                      <option value="Server Room">Server Room</option>
+                      <option value="MEP Area">MEP Area</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="pt-4 border-t border-outline-variant flex justify-end">
@@ -1276,8 +1360,9 @@ export default function Settings({
                       className="w-full px-3 py-1.5 bg-white border border-outline-variant rounded-lg text-xs font-bold text-on-surface outline-none cursor-pointer"
                     >
                       <option value="All">Semua Level Akses</option>
-                      <option value="Staff">Staff Access</option>
                       <option value="Full Access">Full Access</option>
+                      <option value="B/G/3">B/G/3</option>
+                      <option value="B/G">B/G</option>
                       <option value="VIP">VIP Access</option>
                       <option value="Server Room">Server Room</option>
                       <option value="MEP Area">MEP Area</option>
@@ -1289,33 +1374,38 @@ export default function Settings({
                   <table className="w-full border-collapse">
                     <thead>
                       <tr className="bg-surface-container-low text-label-md font-label-md text-on-surface-variant border-b border-outline-variant text-[10px] uppercase tracking-wider font-bold">
-                        <th className="px-4 py-3">{t('card_id_col')}</th>
-                        <th className="px-4 py-3">{t('card_number_col')}</th>
-                        <th className="px-4 py-3">Perusahaan</th>
-                        <th className="px-4 py-3">{t('holder_col')}</th>
-                        <th className="px-4 py-3">{t('access_level_col')}</th>
-                        <th className="px-4 py-3">{t('card_status_col')}</th>
-                        <th className="px-4 py-3 text-right">Aksi</th>
+                        <th className="px-3 py-3">{t('card_number_col')}</th>
+                        <th className="px-3 py-3">Perusahaan</th>
+                        <th className="px-3 py-3">{t('holder_col')}</th>
+                        <th className="px-3 py-3">Jabatan</th>
+                        <th className="px-3 py-3">Pintu</th>
+                        <th className="px-3 py-3">{t('access_level_col')}</th>
+                        <th className="px-3 py-3">{t('card_status_col')}</th>
+                        <th className="px-3 py-3 text-right">Aksi</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-outline-variant text-xs font-semibold text-on-surface">
-                      {filteredAccessCards.map(c => {
+                      {filteredAccessCards.map((c, idx) => {
                         const cardTenant = tenants.find(t => t.id === c.tenantId);
                         const isSuspended = c.status === 'Suspended';
+                        const companyName = c.company || (cardTenant ? cardTenant.company : '—');
                         return (
                           <tr key={c.id} className="hover:bg-surface-container-low transition-colors">
-                            <td className="px-4 py-3 text-on-surface-variant font-mono text-[10px]">{c.id}</td>
-                            <td className="px-4 py-3 font-bold font-mono text-primary">{c.cardNumber}</td>
-                            <td className="px-4 py-3 font-extrabold truncate max-w-[120px]">
-                              {cardTenant ? cardTenant.company : 'Unknown'}
+                            <td className="px-3 py-2.5 font-bold font-mono text-primary text-[11px]">{c.cardNumber}</td>
+                            <td className="px-3 py-2.5 font-extrabold truncate max-w-[120px] text-[10px]">{companyName}</td>
+                            <td className="px-3 py-2.5 font-bold text-on-surface text-[11px]">{c.holderName}</td>
+                            <td className="px-3 py-2.5 text-on-surface-variant text-[10px]">{c.jabatan || '—'}</td>
+                            <td className="px-3 py-2.5 text-[10px]">
+                              <span className="bg-primary/10 text-primary px-2 py-0.5 rounded font-bold border border-primary/20">
+                                {c.pintu || c.accessLevel}
+                              </span>
                             </td>
-                            <td className="px-4 py-3 font-bold text-on-surface">{c.holderName}</td>
-                            <td className="px-4 py-3">
-                              <span className="bg-surface-container-highest px-2 py-0.5 rounded text-[10px] text-on-surface-variant font-bold border border-outline-variant/60">
+                            <td className="px-3 py-2.5 text-[10px]">
+                              <span className="bg-surface-container-highest px-2 py-0.5 rounded text-on-surface-variant font-bold border border-outline-variant/60">
                                 {c.accessLevel}
                               </span>
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-3 py-2.5">
                               <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${
                                 isSuspended 
                                   ? 'bg-red-50 text-red-700 border-red-200' 
@@ -1324,7 +1414,7 @@ export default function Settings({
                                 {isSuspended ? t('card_status_suspended') : t('card_status_active')}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-right">
+                            <td className="px-3 py-2.5 text-right">
                               <div className="flex gap-2 justify-end">
                                 <button 
                                   type="button"
@@ -1356,7 +1446,7 @@ export default function Settings({
                       })}
                       {filteredAccessCards.length === 0 && (
                         <tr>
-                          <td colSpan="7" className="text-center py-8 text-outline">
+                          <td colSpan="8" className="text-center py-8 text-outline">
                             Tidak ada kartu akses yang sesuai dengan pencarian/filter.
                           </td>
                         </tr>

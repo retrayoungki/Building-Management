@@ -3,6 +3,7 @@ import {
   Shield, CheckCircle2, AlertTriangle, RefreshCw, MoreVertical,
   Plus, Calendar, Clock, Download, ArrowUpRight
 } from 'lucide-react';
+import ExportToolbar from '../components/ExportToolbar';
 
 const shiftRoster = [
   {
@@ -103,23 +104,42 @@ export default function SecurityCleaningSupervision() {
           <h2 className="text-2xl font-bold text-primary">Security & Cleaning Supervision</h2>
           <p className="text-sm text-on-surface-variant mt-0.5">Monitor facility safety and hygiene standards in real-time.</p>
         </div>
-        <div className="flex items-center gap-2 bg-surface-container p-1 rounded-lg border border-outline-variant">
-          <button
-            onClick={() => setViewType('weekly')}
-            className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${
-              viewType === 'weekly' ? 'bg-white shadow-sm text-primary' : 'text-on-surface-variant hover:bg-surface-container-high'
-            }`}
-          >
-            Weekly View
-          </button>
-          <button
-            onClick={() => setViewType('monthly')}
-            className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${
-              viewType === 'monthly' ? 'bg-white shadow-sm text-primary' : 'text-on-surface-variant hover:bg-surface-container-high'
-            }`}
-          >
-            Monthly View
-          </button>
+        <div className="flex items-center gap-3">
+          <ExportToolbar
+            title="Security & Cleaning Supervision"
+            subtitle="Data roster keamanan dan kebersihan Graha Kaji"
+            filename="security_cleaning_roster"
+            data={shiftRoster}
+            columns={[
+              { key: 'name', label: 'Nama Staff' },
+              { key: 'role', label: 'Jabatan' },
+              { key: 'shift', label: 'Shift' },
+              { key: 'status', label: 'Status' },
+              { key: 'area', label: 'Area' },
+            ]}
+            summaryCards={[
+              { label: 'Total Staff', value: shiftRoster.length },
+              { label: 'On Duty', value: shiftRoster.filter(s=>s.status==='On Duty').length },
+            ]}
+          />
+          <div className="flex items-center gap-2 bg-surface-container p-1 rounded-lg border border-outline-variant">
+            <button
+              onClick={() => setViewType('weekly')}
+              className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${
+                viewType === 'weekly' ? 'bg-white shadow-sm text-primary' : 'text-on-surface-variant hover:bg-surface-container-high'
+              }`}
+            >
+              Weekly View
+            </button>
+            <button
+              onClick={() => setViewType('monthly')}
+              className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${
+                viewType === 'monthly' ? 'bg-white shadow-sm text-primary' : 'text-on-surface-variant hover:bg-surface-container-high'
+              }`}
+            >
+              Monthly View
+            </button>
+          </div>
         </div>
       </div>
 
